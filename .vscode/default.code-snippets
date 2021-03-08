@@ -1,0 +1,18 @@
+{
+  "IOTSImport": {
+    "scope": "typescript",
+    "prefix": "iots, io-ts",
+    "description": "import io-ts lib",
+    "body": ["import * as ${0:Codec} from 'io-ts/lib/${0:Codec}';"]
+  },
+  "AllIOTSImport": {
+    "scope": "typescript",
+    "prefix": "iots, io-ts",
+    "description": "implort all io-ts libs",
+    "body": [
+      "import * as Codec from 'io-ts/lib/Codec';",
+      "import * as Decoder from 'io-ts/lib/Decoder';",
+      "import * as Encoder from 'io-ts/lib/Encoder';"
+    ]
+  }
+}
