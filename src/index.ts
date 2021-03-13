@@ -6,7 +6,6 @@ import * as he from "he";
 import _, {
   Dictionary,
   flatMap,
-  flatten,
   flow,
   groupBy,
   keyBy,
@@ -14,7 +13,6 @@ import _, {
 } from "lodash";
 import path from "path";
 import { Aerodrome, aerodromeCodec } from "./domain/Aerodrome";
-
 const filePath = path.resolve("./raw-data", "XML_SIA_2021-03-25.xml");
 const fileReadStream = fs.createReadStream(filePath);
 
@@ -57,12 +55,16 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     ArpLat: string;
     AdRefAltFt: string;
     ArpLong: string;
+    AdNomComplet: string;
+    AdNomCarto: string;
+    AdMagVar: string;
   };
   type Espace = Attributes & {};
 
   type Frequence = Attributes & {
     Ad: Attributes;
     Frequence: number;
+    Remarque: string;
   };
 
   type Service = Attributes & {
@@ -113,13 +115,9 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
 
   const frequencesByAdId = flow(
     (adId) => {
-      // if (adId == 14) {
-      //   console.log(servicesByAdId[adId]);
-      // }
       const ctrServices = ctrServicesByAdId[adId];
-      return ctrServices
-        ? [...servicesByAdId[adId], ...ctrServices]
-        : servicesByAdId[adId];
+      return ctrServices ? ctrServices : servicesByAdId[adId];
+      // return servicesByAdId[adId];
     },
     (services) => {
       return services
@@ -137,19 +135,48 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     },
   );
 
+  const frequences = ({
+    service,
+    indicService,
+    adId,
+  }: {
+    service: string;
+    indicService?: string;
+    adId: string;
+  }) =>
+    _(
+      frequencesByAdId(adId)
+        .filter(
+          ({ service: { Service, IndicService } }) =>
+            Service === service &&
+            (!indicService || IndicService === indicService),
+        )
+        .map(({ service, frequences }) =>
+          frequences.map((f) => ({
+            frequency: `${f.Frequence}`,
+            remarks: f.Remarque,
+          })),
+        ),
+    )
+      .flatten()
+      .value();
+
   const aerodromes: Dictionary<Aerodrome[]> = {};
   // console.log(keys(jsonObj.SiaExport.Situation));
   // console.log(jsonObj.SiaExport.Situation.AdS.Ad[100]);
   for (const Ad of jsonObj.SiaExport.Situation.AdS.Ad) {
-    if (Ad._pk == 14) {
-      console.log(JSON.stringify(frequencesByAdId(Ad._pk)));
-    }
+    // if (Ad._pk == 14) {
+    //   console.log(JSON.stringify(frequencesByAdId(Ad._pk)));
+    // }
     const {
       ArpLat,
       AdRefAltFt,
       AdCode,
       Territoire,
       ArpLong,
+      AdNomComplet,
+      AdNomCarto,
+      AdMagVar,
       _pk: adId,
     }: Ad = Ad;
     // console.log(pk);
@@ -159,46 +186,15 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
         aerodromeAltitude: AdRefAltFt,
         icaoCode: `${Territoire._lk.substr(1, 2)}${AdCode}`,
         frequencies: {
-          atis: flatten(
-            frequencesByAdId(adId)
-              .filter(({ service: { Service } }) => Service === "ATIS")
-              .map(({ service, frequences }) =>
-                frequences.map((f) => `${f.Frequence}`),
-              ),
-          ),
-          autoinfo: flatten(
-            frequencesByAdId(adId)
-              .filter(
-                ({ service: { Service, IndicService } }) => Service === "A/A",
-              )
-              .map(({ service, frequences }) =>
-                frequences.map((f) => `${f.Frequence}`),
-              ),
-          ),
-          ground: flatten(
-            frequencesByAdId(adId)
-              .filter(
-                ({ service: { Service, IndicService } }) =>
-                  Service === "TWR" && IndicService === "Sol",
-              )
-              .map(({ service, frequences }) =>
-                frequences.map((f) => `${f.Frequence}`),
-              ),
-          ),
-          tower: _(
-            frequencesByAdId(adId)
-              .filter(({ service, frequences }) => {
-                const { Service, IndicService } = service;
-                return Service === "TWR" && IndicService === "Tour";
-              })
-              .map(({ service, frequences }) =>
-                frequences.map((f) => `${f.Frequence}`),
-              ),
-          )
-            .flatten()
-            .uniq()
-            .value(),
+          afis: frequences({ adId, service: "AFIS" }),
+          atis: frequences({ adId, service: "ATIS" }),
+          autoinfo: frequences({ adId, service: "A/A" }),
+          ground: frequences({ adId, service: "TWR", indicService: "Sol" }),
+          tower: frequences({ adId, service: "TWR", indicService: "Tour" }),
         },
+        name: AdNomComplet,
+        mapShortName: AdNomCarto,
+        magneticVariation: AdMagVar,
       }),
       Either.fold(
         (r) => {
@@ -207,16 +203,17 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
         },
         (a) => {
           //@ts-ignore
-          aerodromes[a.icaoCode] = a;
+          aerodromes[a.icaoCode] = aerodromeCodec.encode(a);
           //@ts-ignore
-          if (a.icaoCode === "LFMU") console.log(a);
+          // if (["LFMU", "LFMT"].includes(a.icaoCode))
+          // console.log(JSON.stringify(aerodromeCodec.encode(a)));
           return null;
         },
       ),
     );
   }
 
-  // console.log(aerodromes);
+  fs.writeFileSync("./output/aerodromes.json", JSON.stringify(aerodromes));
   // setTimeout(() =>
   // {console.log(aerodromes["LFMU"]);
   // }, 10000)

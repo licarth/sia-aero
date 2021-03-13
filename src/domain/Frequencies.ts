@@ -1,16 +1,21 @@
 import * as Codec from "io-ts/Codec";
-import { VhfRadioFrequency, vhfRadioFrequencyCodec } from "./VhfRadioFrequency";
+import {
+  VhfFrequencyWithRemarks,
+  vhfFrequencyWithRemarksCodec
+} from "./FrequencyWithRemarks";
 
 export interface Frequencies {
-  autoinfo: ReadonlyArray<VhfRadioFrequency>;
-  atis: ReadonlyArray<VhfRadioFrequency>;
-  tower: ReadonlyArray<VhfRadioFrequency>;
-  ground: ReadonlyArray<VhfRadioFrequency>;
+  afis: ReadonlyArray<VhfFrequencyWithRemarks>;
+  atis: ReadonlyArray<VhfFrequencyWithRemarks>;
+  autoinfo: ReadonlyArray<VhfFrequencyWithRemarks>;
+  ground: ReadonlyArray<VhfFrequencyWithRemarks>;
+  tower: ReadonlyArray<VhfFrequencyWithRemarks>;
 }
 
 export const frequenciesCodec = Codec.struct({
-  atis: Codec.array(vhfRadioFrequencyCodec),
-  autoinfo: Codec.array(vhfRadioFrequencyCodec),
-  tower: Codec.array(vhfRadioFrequencyCodec),
-  ground: Codec.array(vhfRadioFrequencyCodec),
+  afis: Codec.array(vhfFrequencyWithRemarksCodec),
+  atis: Codec.array(vhfFrequencyWithRemarksCodec),
+  autoinfo: Codec.array(vhfFrequencyWithRemarksCodec),
+  tower: Codec.array(vhfFrequencyWithRemarksCodec),
+  ground: Codec.array(vhfFrequencyWithRemarksCodec),
 });
