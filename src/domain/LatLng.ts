@@ -49,7 +49,7 @@ const latDecoder = pipe(
       Latitude.parse,
       Either.fold(
         ({ reason }) => Decoder.failure(n, reason),
-        (v) => Decoder.success(v),
+        Decoder.success,
       ),
     ),
   ),
@@ -63,7 +63,7 @@ const lonDecoder = pipe(
       Longitude.parse,
       Either.fold(
         ({ reason }) => Decoder.failure(n, reason),
-        (v) => Decoder.success(v),
+        Decoder.success,
       ),
     ),
   ),

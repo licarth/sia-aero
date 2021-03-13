@@ -32,7 +32,7 @@ export const icaoCodeCodec: Codec.Codec<unknown, any, IcaoCode> = Codec.make(
         IcaoCode.parse,
         Either.fold(
           ({ reason }) => Decoder.failure(icaoCode, reason),
-          (v) => Decoder.success(v),
+          Decoder.success,
         ),
       ),
     ),

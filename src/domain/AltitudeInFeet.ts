@@ -19,7 +19,7 @@ export const altitudeInFeetCodec = Codec.make(
         flow(iso<AltitudeInFeet>().wrap, right),
         Either.fold(
           ({ reason }) => Decoder.failure(altitude, reason),
-          (v) => Decoder.success(v),
+          Decoder.success,
         ),
       ),
     ),
