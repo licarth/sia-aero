@@ -19,8 +19,8 @@ const filePath = path.resolve("./raw-data", "XML_SIA_2021-03-25.xml");
 const fileReadStream = fs.createReadStream(filePath);
 
 var options = {
-  attributeNamePrefix: "",
-  attrNodeName: "attrs", //default is 'false'
+  attributeNamePrefix: "_",
+  // attrNodeName: false, //default is 'false'
   textNodeName: "#text",
   ignoreAttributes: false,
   ignoreNameSpace: false,
@@ -46,10 +46,8 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
   );
 
   type Attributes = {
-    attrs: {
-      pk: string;
-      lk: string;
-    };
+    _pk: string;
+    _lk: string;
   };
 
   type Ad = Attributes & {
@@ -95,22 +93,22 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     EspaceS: { Espace },
   }: SiaExport = jsonObj.SiaExport.Situation;
 
-  const adById = keyBy(Ad, "attrs.pk");
-  const servicesByAdId = groupBy(Service, "Ad.attrs.pk");
-  const serviceById = keyBy(Service, "attrs.pk");
+  const adById = keyBy(Ad, "_pk");
+  const servicesByAdId = groupBy(Service, "Ad._pk");
+  const serviceById = keyBy(Service, "_pk");
   const serviceByEspaceId = _(Service)
     .filter(({ Espace }) => Espace !== null)
-    .groupBy("Espace.attrs.pk")
+    .groupBy("Espace._pk")
     .value();
-  const espaceById = keyBy(Espace, "attrs.pk");
-  const frequencesByServiceId = groupBy(Frequence, "Service.attrs.pk");
+  const espaceById = keyBy(Espace, "_pk");
+  const frequencesByServiceId = groupBy(Frequence, "Service._pk");
 
   const ctrServicesByAdId = mapValues(
     keyBy(
-      flatMap(Ad, ({ attrs: { pk }, Ctr }) => (Ctr ? [{ Ctr, adId: pk }] : [])),
+      flatMap(Ad, ({ _pk, Ctr }) => (Ctr ? [{ Ctr, adId: _pk }] : [])),
       "adId",
     ),
-    ({ Ctr }) => serviceByEspaceId[Ctr.attrs.pk],
+    ({ Ctr }) => serviceByEspaceId[Ctr._pk],
   );
 
   const frequencesByAdId = flow(
@@ -126,12 +124,12 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     (services) => {
       return services
         ? services.map((service) => {
-            if (service.attrs.pk == "720") {
+            if (service._pk == "720") {
               // console.log(service);
-              // console.log(frequencesByServiceId[service.attrs.pk]);
+              // console.log(frequencesByServiceId[service._pk]);
             }
             return {
-              frequences: frequencesByServiceId[service.attrs.pk],
+              frequences: frequencesByServiceId[service._pk],
               service,
             };
           })
@@ -143,8 +141,8 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
   // console.log(keys(jsonObj.SiaExport.Situation));
   // console.log(jsonObj.SiaExport.Situation.AdS.Ad[100]);
   for (const Ad of jsonObj.SiaExport.Situation.AdS.Ad) {
-    if (Ad.attrs.pk == 14) {
-      console.log(JSON.stringify(frequencesByAdId(Ad.attrs.pk)));
+    if (Ad._pk == 14) {
+      console.log(JSON.stringify(frequencesByAdId(Ad._pk)));
     }
     const {
       ArpLat,
@@ -152,14 +150,14 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
       AdCode,
       Territoire,
       ArpLong,
-      attrs: { pk: adId },
+      _pk: adId,
     }: Ad = Ad;
     // console.log(pk);
     pipe(
       aerodromeCodec.decode({
         latLng: { lat: ArpLat, lng: ArpLong },
         aerodromeAltitude: AdRefAltFt,
-        icaoCode: `${Territoire.attrs.lk.substr(1, 2)}${AdCode}`,
+        icaoCode: `${Territoire._lk.substr(1, 2)}${AdCode}`,
         frequencies: {
           atis: flatten(
             frequencesByAdId(adId)
