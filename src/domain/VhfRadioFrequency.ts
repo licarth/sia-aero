@@ -24,18 +24,12 @@ export namespace VhfRadioFrequency {
       toKhz,
       Either.fromPredicate(
         (kHzValue) => kHzValue % 5 === 0,
-        (_) =>
-          ValidationFailure.create(
-            `frequency ${mhzValue} is not a multiple of 5 kHz`,
-          ),
+        (_) => ValidationFailure.create(`a multiple of 5 kHz`),
       ),
       Either.chain(
         Either.fromPredicate(
           (kHzValue) => kHzValue >= 117975 && kHzValue <= 137000,
-          (_) =>
-            ValidationFailure.create(
-              `frequency ${mhzValue} is not in radiotelecommunications range [117.975, 137.000] Mhz`,
-            ),
+          (_) => ValidationFailure.create(`in range [117.975, 137.000] Mhz`),
         ),
       ),
       Either.map((kHzValue) => {
@@ -45,9 +39,11 @@ export namespace VhfRadioFrequency {
       }),
       Either.map(iso<VhfRadioFrequency>().wrap),
     );
+  export const getValue = iso<VhfRadioFrequency>().unwrap;
 }
 
-const EMERGENCY = VhfRadioFrequency.parse(121.5);
+export const EMERGENCY = iso<VhfRadioFrequency>().wrap("121.500");
+export const AUTOINFO = iso<VhfRadioFrequency>().wrap("123.500");
 
 export const vhfRadioFrequencyCodec = Codec.make(
   newTypeNumberDecoder(VhfRadioFrequency.parse),

@@ -3,6 +3,7 @@ import { AltitudeInFeet, altitudeInFeetCodec } from "./AltitudeInFeet";
 import { Frequencies, frequenciesCodec } from "./Frequencies";
 import { IcaoCode, icaoCodeCodec } from "./IcaoCode";
 import { LatLng, latLngCodec } from "./LatLng";
+import { Runways, runwaysCodec } from "./Runways";
 
 export interface Aerodrome {
   icaoCode: IcaoCode;
@@ -12,6 +13,7 @@ export interface Aerodrome {
   name: string;
   mapShortName: string;
   magneticVariation: number;
+  runways: Runways;
 }
 
 export const aerodromeCodec: Codec.Codec<unknown, any, Aerodrome> = Codec.struct({
@@ -22,4 +24,5 @@ export const aerodromeCodec: Codec.Codec<unknown, any, Aerodrome> = Codec.struct
   name: Codec.string,
   mapShortName: Codec.string,
   magneticVariation: Codec.number,
+  runways: runwaysCodec
 });

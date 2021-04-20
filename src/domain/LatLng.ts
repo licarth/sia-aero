@@ -3,7 +3,7 @@ import * as Either from "fp-ts/lib/Either";
 import * as Codec from "io-ts/Codec";
 import * as Decoder from "io-ts/Decoder";
 import { iso, Newtype } from "newtype-ts";
-import { stringEncoder } from "./iotsUtils";
+import { numberEncoder } from "./iotsUtils";
 import { ValidationFailure } from "./ValidationFailure";
 
 export interface Latitude
@@ -15,10 +15,11 @@ export namespace Latitude {
   ) => Either.Either<ValidationFailure, Latitude> = flow(
     Either.fromPredicate(
       (n) => n >= -90 && n <= 90,
-      (n) => ValidationFailure.create(`Provided value ${n} is not in [-90,90]`),
+      () => ValidationFailure.create(`in [-90,90]`),
     ),
     Either.map(iso<Latitude>().wrap),
   );
+  export const getValue = iso<Latitude>().unwrap;
 }
 
 export interface Longitude
@@ -29,11 +30,11 @@ export namespace Longitude {
   ) => Either.Either<ValidationFailure, Longitude> = flow(
     Either.fromPredicate(
       (n) => !(n < -180 || n > 180),
-      (n) =>
-        ValidationFailure.create(`Provided value ${n} is not in [-180,180]`),
+      () => ValidationFailure.create(`in [-180,180]`),
     ),
     Either.map(iso<Longitude>().wrap),
   );
+  export const getValue = iso<Longitude>().unwrap;
 }
 
 export interface LatLng {
@@ -47,10 +48,7 @@ const latDecoder = pipe(
     pipe(
       n,
       Latitude.parse,
-      Either.fold(
-        ({ reason }) => Decoder.failure(n, reason),
-        Decoder.success,
-      ),
+      Either.fold(({ reason }) => Decoder.failure(n, reason), Decoder.success),
     ),
   ),
 );
@@ -61,16 +59,13 @@ const lonDecoder = pipe(
     pipe(
       n,
       Longitude.parse,
-      Either.fold(
-        ({ reason }) => Decoder.failure(n, reason),
-        Decoder.success,
-      ),
+      Either.fold(({ reason }) => Decoder.failure(n, reason), Decoder.success),
     ),
   ),
 );
 
-const latCodec = Codec.make(latDecoder, stringEncoder<Latitude>());
-const lonCodec = Codec.make(lonDecoder, stringEncoder<Longitude>());
+const latCodec = Codec.make(latDecoder, numberEncoder<Latitude>());
+const lonCodec = Codec.make(lonDecoder, numberEncoder<Longitude>());
 
 export const latLngCodec = Codec.struct({
   lat: latCodec,

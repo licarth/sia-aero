@@ -14,13 +14,14 @@ export namespace IcaoCode {
   ) => Either.Either<ValidationFailure, IcaoCode> = flow(
     Either.fromPredicate(
       (value) => value.length === 4,
-      (value) =>
+      () =>
         ValidationFailure.create(
-          `Provided value ${value} is not a 4-letter code`,
+          `a valid 4-letter code`,
         ),
     ),
     Either.map(iso<IcaoCode>().wrap),
   );
+  export const getValue = iso<IcaoCode>().unwrap;
 }
 
 export const icaoCodeCodec: Codec.Codec<unknown, any, IcaoCode> = Codec.make(

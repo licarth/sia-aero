@@ -8,6 +8,10 @@ import { iso, Newtype } from "newtype-ts";
 export interface AltitudeInFeet
   extends Newtype<{ readonly AerodromeAltitude: unique symbol }, number> {}
 
+export namespace AltitudeInFeet {
+  export const getValue = iso<AltitudeInFeet>().unwrap;
+}
+
 export const toAltitudeInFeet = iso<AltitudeInFeet>().wrap;
 
 export const altitudeInFeetCodec = Codec.make(

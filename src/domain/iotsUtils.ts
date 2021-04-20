@@ -1,13 +1,19 @@
 import * as Either from "fp-ts/lib/Either";
-import { pipe } from "fp-ts/lib/function";
+import { flow, pipe } from "fp-ts/lib/function";
+import { number } from "io-ts/lib/Codec";
 import * as Decoder from "io-ts/lib/Decoder";
 import * as Encoder from "io-ts/lib/Encoder";
 import { ValidationFailure } from "./ValidationFailure";
 
 type StringEncoder = <T>() => Encoder.Encoder<string, T>;
+type NumberEncoder = <T>() => Encoder.Encoder<number, T>;
 
 export const stringEncoder: StringEncoder = <T>() => ({
   encode: String,
+});
+
+export const numberEncoder: NumberEncoder = <T>() => ({
+  encode: flow((x) => (x as unknown) as number, number.encode),
 });
 
 export const newTypeNumberDecoder: <T>(
