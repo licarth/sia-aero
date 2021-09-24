@@ -1,15 +1,17 @@
 export class ValidationFailure {
   reason: string;
+  value: any;
 
-  constructor(reason: string) {
+  constructor(value: any, reason: string) {
+    this.value = value;
     this.reason = reason;
   }
 
   toError() {
-    return new Error(this.reason);
+    return new Error(`Value is ${this.reason} : ${this.value}`);
   }
 
-  static create(reason: string) {
-    return new ValidationFailure(reason);
+  static create(value: any, reason: string) {
+    return new ValidationFailure(value, reason);
   }
 }

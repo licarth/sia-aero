@@ -24,12 +24,16 @@ export namespace VhfRadioFrequency {
       toKhz,
       Either.fromPredicate(
         (kHzValue) => kHzValue % 5 === 0,
-        (_) => ValidationFailure.create(`a multiple of 5 kHz`),
+        (kHzValue) => ValidationFailure.create(kHzValue, `a multiple of 5 kHz`),
       ),
       Either.chain(
         Either.fromPredicate(
           (kHzValue) => kHzValue >= 117975 && kHzValue <= 137000,
-          (_) => ValidationFailure.create(`in range [117.975, 137.000] Mhz`),
+          (kHzValue) =>
+            ValidationFailure.create(
+              kHzValue,
+              `in range [117.975, 137.000] Mhz`,
+            ),
         ),
       ),
       Either.map((kHzValue) => {

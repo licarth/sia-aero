@@ -15,7 +15,7 @@ export namespace Latitude {
   ) => Either.Either<ValidationFailure, Latitude> = flow(
     Either.fromPredicate(
       (n) => n >= -90 && n <= 90,
-      () => ValidationFailure.create(`in [-90,90]`),
+      (value) => ValidationFailure.create(value, `in [-90,90]`),
     ),
     Either.map(iso<Latitude>().wrap),
   );
@@ -30,7 +30,7 @@ export namespace Longitude {
   ) => Either.Either<ValidationFailure, Longitude> = flow(
     Either.fromPredicate(
       (n) => !(n < -180 || n > 180),
-      () => ValidationFailure.create(`in [-180,180]`),
+      (value) => ValidationFailure.create(value, `in [-180,180]`),
     ),
     Either.map(iso<Longitude>().wrap),
   );
@@ -40,6 +40,16 @@ export namespace Longitude {
 export interface LatLng {
   lat: Latitude;
   lng: Longitude;
+}
+
+export namespace LatLng {
+  export const parse: (value: any) => Either.Either<ValidationFailure, LatLng> =
+    ({ lat, lng }) =>
+      pipe(
+        Either.Do,
+        Either.bind("lat", () => Latitude.parse(lat)),
+        Either.bind("lng", () => Longitude.parse(lng)),
+      );
 }
 
 const latDecoder = pipe(

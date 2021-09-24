@@ -1,5 +1,5 @@
 {
-  "name": "aero-data-pipeline",
+  "name": "ts-aerodata",
   "version": "1.0.0",
   "main": "build/index.js",
   "author": "Thomas Carli <thomas.carli@gmail.com>",
@@ -23,6 +23,7 @@
     "lodash": "^4.17.21",
     "monocle-ts": "^2.3.9",
     "newtype-ts": "^0.3.4",
+    "practical-gpx-to-js": "^0.1.0",
     "rbush": "^3.0.1",
     "ts-jest": "^26.5.3"
   },
@@ -36,6 +37,7 @@
     "test": "jest",
     "build": "rm -rf build && mkdir build && tsc --outDir build",
     "build-incremental": "tsc --outDir build",
+    "prepublish": "build",
     "generate-json": "yarn generateJson"
   },
   "types": "build/types/index.d.ts"

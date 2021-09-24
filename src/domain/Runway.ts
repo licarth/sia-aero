@@ -33,7 +33,7 @@ export namespace MagneticRunwayOrientation {
       Either.fromPredicate(
         (orientationInDegrees) =>
           orientationInDegrees >= 0 && orientationInDegrees <= 180,
-        (_) => ValidationFailure.create(`in range [0, 180] °`),
+        (value) => ValidationFailure.create(value, `in range [0, 180] °`),
       ),
       Either.map(iso<MagneticRunwayOrientation>().wrap),
     );

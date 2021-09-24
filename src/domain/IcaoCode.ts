@@ -14,10 +14,7 @@ export namespace IcaoCode {
   ) => Either.Either<ValidationFailure, IcaoCode> = flow(
     Either.fromPredicate(
       (value) => value.length === 4,
-      () =>
-        ValidationFailure.create(
-          `a valid 4-letter code`,
-        ),
+      (value) => ValidationFailure.create(value, `a valid 4-letter code`),
     ),
     Either.map(iso<IcaoCode>().wrap),
   );

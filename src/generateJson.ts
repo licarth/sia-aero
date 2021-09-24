@@ -7,12 +7,22 @@ import fs from "fs";
 import * as he from "he";
 import { draw } from "io-ts/lib/Decoder";
 import _, { flatMap, flow, groupBy, keyBy, mapValues } from "lodash";
+import * as fp from "lodash/fp";
+import { iso } from "newtype-ts";
 import path from "path";
-import { AUTOINFO, Frequencies } from "./domain";
+import {
+  AUTOINFO,
+  Frequencies,
+  Latitude,
+  Longitude,
+  ValidationFailure
+} from "./domain";
 import { Aerodrome, aerodromeCodec } from "./domain/Aerodrome";
 import { airacCycleCodec, AiracCycleData } from "./domain/AiracCycleData";
+import { Ctr } from "./domain/Ctr";
 import { obstacleCodec } from "./domain/Obstacle";
-
+import { VfrPoint } from "./domain/VfrPoint";
+import { importVfrPoints } from "./useCases/importVfrPoints";
 
 const filePath = path.resolve("./raw-data", "XML_SIA_2021-03-25.xml");
 const fileReadStream = fs.createReadStream(filePath);
@@ -34,9 +44,15 @@ const addMissingAutoInfoFrequency = (a: Aerodrome): Aerodrome => {
   return a;
 };
 
-const postProcess = (entries: AiracCycleData): AiracCycleData => ({
+const vfrPointsFilePath = path.resolve("./raw-data", "vfr-france.xml");
+const vfrPoints = importVfrPoints(
+  fs.readFileSync(vfrPointsFilePath).toString(),
+);
+
+const postProcess = (entries: AiracCycleData) => ({
   aerodromes: entries.aerodromes.map(addMissingAutoInfoFrequency),
-  obstacles: [],
+  obstacles: entries.obstacles,
+  vfrPoints: entries.vfrPoints,
 });
 
 var options = {
@@ -83,13 +99,18 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     AdMagVar: string;
   };
 
-  type Espace = Attributes & {};
+  type Espace = Attributes & {
+    Territoire: Attributes;
+    TypeEspace: string;
+    Nom: string;
+    AdAssocie: Attributes;
+  };
 
   type Rwy = Attributes & {
     OrientationGeo: number;
     Longueur: number;
     Rwy: string;
-    Principale: "oui" | "non";
+    Principale?: "oui" | "non";
     Revetement: string;
   };
 
@@ -115,6 +136,13 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     Espace?: Attributes;
   };
 
+  type Partie = Attributes & {
+    Espace: Attributes;
+    NomPartie: string;
+    NumeroPartie: number;
+    Geometrie: string;
+  };
+
   type SiaExport = {
     AdS: {
       Ad: Array<Ad>;
@@ -134,6 +162,9 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     ObstacleS: {
       Obstacle: Array<Obstacle>;
     };
+    PartieS: {
+      Partie: Array<Partie>;
+    };
   };
 
   const {
@@ -143,6 +174,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     EspaceS: { Espace },
     RwyS: { Rwy },
     ObstacleS: { Obstacle },
+    PartieS: { Partie },
   }: SiaExport = jsonObj.SiaExport.Situation;
 
   const adById = keyBy(Ad, "_pk");
@@ -155,10 +187,27 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
   const espaceById = keyBy(Espace, "_pk");
   const frequencesByServiceId = groupBy(Frequence, "Service._pk");
   const rwysByAdId = groupBy(Rwy, "Ad._pk");
-
+  const partiesByEspaceId = keyBy(Partie, "Espace._pk");
+  const ctrEspaces: Ctr[] = _(Espace)
+    .filter((e) => e.TypeEspace === "CTR")
+    .map((e) => ({
+      name: e.Nom,
+      geometry: partiesByEspaceId[e._pk].Geometrie.split("\n").map(
+        (latlngString) => {
+          // console.log(latlngString);
+          const latlng = latlngString.split(",");
+          return {
+            lat: iso<Latitude>().wrap(Number(latlng[0])),
+            lng: iso<Longitude>().wrap(Number(latlng[1])),
+          };
+        },
+      ),
+    }))
+    .value();
   // console.log(JSON.stringify(rwysByAdId["66"]));
   // //@ts-ignore
   // return;
+  // console.log(JSON.stringify(ctrEspaces));
 
   const ctrServicesByAdId = mapValues(
     keyBy(
@@ -192,7 +241,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     },
   );
 
-  console.log(frequencesByAdId(66));
+  // console.log(frequencesByAdId(66));
 
   const frequences = ({
     service,
@@ -220,6 +269,18 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
       .uniqBy("frequency") //Removes duplicates for TWR
       .flatten()
       .value();
+
+  console.log(vfrPoints);
+
+  const vfrPointsByIcaoCode = pipe(
+    vfrPoints,
+    Either.getOrElse<ValidationFailure, VfrPoint[]>(() => {
+      throw new Error("Cannot read VFR points !");
+    }),
+    fp.groupBy("icaoCode"),
+  );
+
+  console.log(vfrPointsByIcaoCode);
 
   const buildAerodrome = ({
     ArpLat,
@@ -251,7 +312,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     });
     const runways = rwysByAdId[adId]?.map(mapRwy);
     const mainRunway = rwysByAdId[adId]
-      ?.filter(({ Principale }) => Principale === "oui")
+      ?.filter(({ Principale }) => !Principale || Principale === "oui")
       .map(mapRwy)[0];
 
     return pipe(
@@ -281,6 +342,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
           runways,
           mainRunway,
         },
+        vfrPoints: vfrPointsByIcaoCode[icaoCode] || [],
       }),
       Either.fold(
         (e) => {
@@ -325,8 +387,13 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     {
       aerodromes: pipe(Ad, (ads) => ads.map(buildAerodrome), array.compact),
       obstacles: pipe(Obstacle, (o) => o.map(buildObstacle), array.compact),
+      vfrPoints: pipe(
+        vfrPoints,
+        Either.getOrElse(() => []),
+      ),
     },
     postProcess,
+    x => x,
     airacCycleCodec.encode,
     (airacData) =>
       fs.writeFileSync(

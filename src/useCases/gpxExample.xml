@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" creator="JpRNavMaster" version="1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1
+http://www.topografix.com/GPX/1/1/gpx.xsd">
+  <wpt lat="44.19280" lon="0.64667">
+    <name>LFBA/A</name>
+    <cmt>Some comment A</cmt>
+  </wpt>
+  <wpt lat="45.19280" lon="0.64667">
+    <name>LFBA/B</name>
+    <cmt>Some comment B</cmt>
+  </wpt>
+</gpx>
