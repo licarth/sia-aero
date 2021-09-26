@@ -9,6 +9,7 @@
   ],
   "dependencies": {
     "@types/he": "^1.1.1",
+    "@types/iconv": "^3.0.0",
     "@types/jest": "^26.0.20",
     "@types/kdbush": "^3.0.0",
     "@types/lodash": "^4.14.168",
@@ -16,6 +17,7 @@
     "fast-xml-parser": "^3.18.0",
     "fp-ts": "^2.9.5",
     "he": "^1.2.0",
+    "iconv": "^3.0.0",
     "io-ts": "^2.2.15",
     "io-ts-types": "^0.5.15",
     "jest": "^26.6.3",
@@ -38,7 +40,7 @@
     "build": "rm -rf build && mkdir build && tsc --outDir build",
     "build-incremental": "tsc --outDir build",
     "prepublish": "build",
-    "generate-json": "yarn generateJson"
+    "generate-json": "yarn ts-node src/generateJson.ts"
   },
   "types": "build/types/index.d.ts"
 }

@@ -1,38 +1,16 @@
-import * as Either from "fp-ts/lib/Either";
-import { pipe } from "fp-ts/lib/function";
-import { draw } from "io-ts/lib/Decoder";
-import { iso } from "newtype-ts";
-import { IcaoCode } from "../domain";
 import { AiracCycles } from "./AiracCycle";
 import { AiracData } from "./AiracData";
 
 describe("AiracData", () => {
-  it("loadCycle should load airports", () => {
-    const cycle = pipe(
-      AiracData.loadCycle(AiracCycles.MARCH_25_2021),
-      Either.fold(
-        (e) => {
-          console.log(draw(e));
-          return null;
-        },
-        (a) => a,
-      ),
-    );
-
-    console.log(cycle.getAerodromesInBbox(9, -90, 10, 90));
+  it("There should be 7 airfields in Corsica", () => {
+    const cycle = AiracData.loadCycle(AiracCycles.NOV_04_2021);
+    expect(cycle.getAerodromesInBbox(8.5, 41.5, 9.5, 43)).toHaveLength(7);
   });
   it("loadCycle should get LFMT", () => {
-    const cycle = pipe(
-      AiracData.loadCycle(AiracCycles.MARCH_25_2021),
-      Either.fold(
-        (e) => {
-          console.log(draw(e));
-          return null;
-        },
-        (a) => a,
-      ),
-    );
+    const cycle = AiracData.loadCycle(AiracCycles.NOV_04_2021);
 
-    console.log(cycle.getAerodromeByIcaoCode(iso<IcaoCode>().wrap("LFMT")));
+    expect(cycle.getAerodromeByIcaoCode("LFMT").mapShortName).toEqual(
+      "MONTPELLIER M.",
+    );
   });
 });

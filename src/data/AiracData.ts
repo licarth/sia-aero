@@ -1,6 +1,4 @@
-import * as Either from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
-import { DecodeError } from "io-ts/lib/Decoder";
 import KDBush from "kdbush";
 import _, { Dictionary } from "lodash";
 import { iso } from "newtype-ts";
@@ -8,6 +6,7 @@ import { Aerodrome, IcaoCode, Latitude, Longitude } from "../domain";
 import { airacCycleCodec, AiracCycleData } from "../domain/AiracCycleData";
 import { Obstacle } from "../domain/Obstacle";
 import { VfrPoint } from "../domain/VfrPoint";
+import { getOrThrowDecodeError } from "../either";
 import { AiracCycle } from "./AiracCycle";
 
 export class AiracData {
@@ -50,17 +49,11 @@ export class AiracData {
     return this._airacCycleData.vfrPoints;
   }
 
-  static loadCycle(
-    airacCycle?: AiracCycle,
-  ): Either.Either<DecodeError, AiracData> {
+  static loadCycle(airacCycle?: AiracCycle): AiracData {
     return pipe(
       airacCycleCodec.decode(airacCycle),
-      Either.map(
-        (airacCycleData) =>
-          new AiracData({
-            airacCycleData,
-          }),
-      ),
+      getOrThrowDecodeError,
+      (airacCycleData) => new AiracData({ airacCycleData }),
     );
   }
 
@@ -82,7 +75,7 @@ export class AiracData {
       .map((i) => this._airacCycleData.vfrPoints[i]);
   }
 
-  getAerodromeByIcaoCode(icaoCode: IcaoCode) {
-    return this._aerodromesPerIcaoCode[IcaoCode.getValue(icaoCode)];
+  getAerodromeByIcaoCode(icaoCode: IcaoCode | string) {
+    return this._aerodromesPerIcaoCode[`${icaoCode}`];
   }
 }

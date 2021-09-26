@@ -6,7 +6,7 @@ import { iso, Newtype } from "newtype-ts";
 import {
   newTypeNumberDecoder,
   numberEncoder,
-  stringEncoder,
+  stringEncoder
 } from "./iotsUtils";
 import { ValidationFailure } from "./ValidationFailure";
 
@@ -45,17 +45,19 @@ const surfaceDecoder: Decoder.Decoder<unknown, RunwaySurface> = pipe(
   Decoder.compose({
     decode: (surface) => {
       switch (surface) {
-        case "non revo?=tue":
+        case "non revêtue":
+        case "non revêtue":
         case "gazon":
         case "grass":
           return Decoder.success("grass");
-        case "bo?=ton bitumineux":
+        case "béton bitumineux":
         case "asphalt":
         case "asphalte":
         case "macadam":
-        case "bo?=ton":
-        case "revo?=tue":
-        case "enrobo?= bitumineux":
+        case "béton":
+        case "revêtue":
+        case "enrobé bitumineux":
+        case "béton bitumineux":
           return Decoder.success("asphalt");
         default:
           return Decoder.failure(surface, "asphalt or grass");

@@ -5,6 +5,7 @@ import { pipe } from "fp-ts/lib/function";
 import { none, some } from "fp-ts/lib/Option";
 import fs from "fs";
 import * as he from "he";
+import { Iconv } from "iconv";
 import { draw } from "io-ts/lib/Decoder";
 import _, { flatMap, flow, groupBy, keyBy, mapValues } from "lodash";
 import * as fp from "lodash/fp";
@@ -24,8 +25,13 @@ import { obstacleCodec } from "./domain/Obstacle";
 import { VfrPoint } from "./domain/VfrPoint";
 import { importVfrPoints } from "./useCases/importVfrPoints";
 
-const filePath = path.resolve("./raw-data", "XML_SIA_2021-03-25.xml");
-const fileReadStream = fs.createReadStream(filePath);
+// const filePath = path.resolve("./raw-data", "XML_SIA_2021-03-25.xml");
+const filePath = path.resolve("./raw-data", "XML_SIA_FR-OM_2021-11-04.xml");
+const windows1252EncodedFileReadStream = fs.readFileSync(filePath);
+
+const utf8FileReadStream = Iconv("windows-1252", "utf8").convert(
+  windows1252EncodedFileReadStream,
+);
 
 export * from "./domain";
 
@@ -77,10 +83,7 @@ var options = {
 
 if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
   //optional (it'll return an object in case it's not valid)
-  var jsonObj = parser.parse(
-    fs.readFileSync(filePath, { encoding: "ascii" }).toString(),
-    options,
-  );
+  var jsonObj = parser.parse(utf8FileReadStream.toString(), options);
 
   type Attributes = {
     _pk: string;
@@ -144,6 +147,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
   };
 
   type SiaExport = {
+    _effDate: string;
     AdS: {
       Ad: Array<Ad>;
     };
@@ -175,6 +179,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     RwyS: { Rwy },
     ObstacleS: { Obstacle },
     PartieS: { Partie },
+    _effDate,
   }: SiaExport = jsonObj.SiaExport.Situation;
 
   const adById = keyBy(Ad, "_pk");
@@ -270,7 +275,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
       .flatten()
       .value();
 
-  console.log(vfrPoints);
+  // console.log(vfrPoints);
 
   const vfrPointsByIcaoCode = pipe(
     vfrPoints,
@@ -280,7 +285,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     fp.groupBy("icaoCode"),
   );
 
-  console.log(vfrPointsByIcaoCode);
+  // console.log(vfrPointsByIcaoCode);
 
   const buildAerodrome = ({
     ArpLat,
@@ -393,11 +398,11 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
       ),
     },
     postProcess,
-    x => x,
+    (x) => x,
     airacCycleCodec.encode,
     (airacData) =>
       fs.writeFileSync(
-        path.resolve(__dirname, "./jsonData/2021_03_25/aerodromes.json"),
+        path.resolve(__dirname, `./jsonData/${_effDate}.json`),
         JSON.stringify(airacData),
       ),
   );
