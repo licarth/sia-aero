@@ -46,6 +46,4 @@ Notamment, de façon non exhaustive:
     CALVI (LFKC): alt. 210 ft, main runway: 18/36
     BASTIA (LFKB): alt. 26 ft, main runway: 16/34
     CORTE (LFKT): alt. 1130 ft, main runway: 12/30 */
-
-
 ```
