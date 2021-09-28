@@ -4,6 +4,8 @@ import _, { Dictionary } from "lodash";
 import { iso } from "newtype-ts";
 import { Aerodrome, IcaoCode, Latitude, Longitude } from "../domain";
 import { airacCycleCodec, AiracCycleData } from "../domain/AiracCycleData";
+import { Airspace } from "../domain/Airspace";
+import { Ctr } from "../domain/Ctr";
 import { Obstacle } from "../domain/Obstacle";
 import { VfrPoint } from "../domain/VfrPoint";
 import { getOrThrowDecodeError } from "../either";
@@ -14,6 +16,10 @@ export class AiracData {
   private _airportsTree: KDBush<Aerodrome>;
   private _obstaclesTree: KDBush<Obstacle>;
   private _vfrPointsTree: KDBush<VfrPoint>;
+  private _areasCornersTree: KDBush<{
+    latLng: [Latitude, Longitude];
+    i: number;
+  }>;
   private _aerodromesPerIcaoCode: Dictionary<Aerodrome>;
 
   constructor({ airacCycleData }: { airacCycleData: AiracCycleData }) {
@@ -34,6 +40,18 @@ export class AiracData {
       (o) => iso<Longitude>().unwrap(o.latLng.lng),
       (o) => iso<Latitude>().unwrap(o.latLng.lat),
     );
+    this._areasCornersTree = new KDBush(
+      _.flatMap(
+        this.ctrs.map((ctr, i) => ({ i, bbox: Airspace.boundingBox(ctr) })),
+        ({ i, bbox }) =>
+          bbox.map((latLng) => ({
+            latLng,
+            i,
+          })),
+      ),
+      (o) => iso<Longitude>().unwrap(o.latLng[1]),
+      (o) => iso<Latitude>().unwrap(o.latLng[0]),
+    );
     this._aerodromesPerIcaoCode = _.keyBy(this.aerodromes, "icaoCode");
   }
 
@@ -47,6 +65,10 @@ export class AiracData {
 
   get vfrPoints(): VfrPoint[] {
     return this._airacCycleData.vfrPoints;
+  }
+
+  get ctrs(): Ctr[] {
+    return this._airacCycleData.ctr;
   }
 
   static loadCycle(airacCycle?: AiracCycle): AiracData {
@@ -73,6 +95,22 @@ export class AiracData {
     return this._vfrPointsTree
       .range(minX, minY, maxX, maxY)
       .map((i) => this._airacCycleData.vfrPoints[i]);
+  }
+
+  getCtrsInBbox(minX: number, minY: number, maxX: number, maxY: number): Ctr[] {
+    return _.uniq(
+      this._areasCornersTree
+        .range(minX, minY, maxX, maxY)
+        .map((i) => Math.floor(i / 4)),
+    ).map((i) => this._airacCycleData.ctr[i]);
+  }
+
+  getTmasInBbox(minX: number, minY: number, maxX: number, maxY: number): Tma[] {
+    return _.uniq(
+      this._areasCornersTree
+        .range(minX, minY, maxX, maxY)
+        .map((i) => Math.floor(i / 4)),
+    ).map((i) => this._airacCycleData.ctr[i]);
   }
 
   getAerodromeByIcaoCode(icaoCode: IcaoCode | string) {

@@ -9,21 +9,17 @@ import { Iconv } from "iconv";
 import { draw } from "io-ts/lib/Decoder";
 import _, { flatMap, flow, groupBy, keyBy, mapValues } from "lodash";
 import * as fp from "lodash/fp";
-import { iso } from "newtype-ts";
 import path from "path";
-import {
-  AUTOINFO,
-  Frequencies,
-  Latitude,
-  Longitude,
-  ValidationFailure
-} from "./domain";
-import { Aerodrome, aerodromeCodec } from "./domain/Aerodrome";
-import { airacCycleCodec, AiracCycleData } from "./domain/AiracCycleData";
-import { Ctr } from "./domain/Ctr";
-import { obstacleCodec } from "./domain/Obstacle";
-import { VfrPoint } from "./domain/VfrPoint";
-import { importVfrPoints } from "./useCases/importVfrPoints";
+import { addAutoInfoWhenNoOtherFrequency } from "../addAutoInfoWhenNoOtherFrequency";
+import { ValidationFailure } from "../domain";
+import { aerodromeCodec } from "../domain/Aerodrome";
+import { airacCycleCodec, AiracCycleData } from "../domain/AiracCycleData";
+import { obstacleCodec } from "../domain/Obstacle";
+import { VfrPoint } from "../domain/VfrPoint";
+import { IGNORED_AERODROMES } from "../ignoredAerodromes";
+import { extractCtrInfo } from "./extractCtrInfo";
+import { importVfrPoints } from "./importVfrPoints";
+import { Obstacle, Rwy, SiaExport } from "./SiaExportTypes";
 
 // const filePath = path.resolve("./raw-data", "XML_SIA_2021-03-25.xml");
 const filePath = path.resolve("./raw-data", "XML_SIA_FR-OM_2021-11-04.xml");
@@ -33,22 +29,7 @@ const utf8FileReadStream = Iconv("windows-1252", "utf8").convert(
   windows1252EncodedFileReadStream,
 );
 
-export * from "./domain";
-
-const addMissingAutoInfoFrequency = (a: Aerodrome): Aerodrome => {
-  if (
-    a.frequencies.autoinfo.length === 0 &&
-    a.frequencies.afis.length === 0 &&
-    a.frequencies.tower.length === 0
-  ) {
-    const frequencies: Frequencies = {
-      ...a.frequencies,
-      autoinfo: [{ frequency: AUTOINFO, remarks: none }],
-    };
-    return { ...a, frequencies };
-  }
-  return a;
-};
+export * from "../domain";
 
 const vfrPointsFilePath = path.resolve("./raw-data", "vfr-france.xml");
 const vfrPoints = importVfrPoints(
@@ -56,9 +37,8 @@ const vfrPoints = importVfrPoints(
 );
 
 const postProcess = (entries: AiracCycleData) => ({
-  aerodromes: entries.aerodromes.map(addMissingAutoInfoFrequency),
-  obstacles: entries.obstacles,
-  vfrPoints: entries.vfrPoints,
+  ...entries,
+  aerodromes: entries.aerodromes.map(addAutoInfoWhenNoOtherFrequency),
 });
 
 var options = {
@@ -80,143 +60,33 @@ var options = {
   tagValueProcessor: (val, tagName) => he.decode(val), //default is a=>a
   stopNodes: ["parse-me-as-string"],
 };
-
 if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
   //optional (it'll return an object in case it's not valid)
   var jsonObj = parser.parse(utf8FileReadStream.toString(), options);
 
-  type Attributes = {
-    _pk: string;
-    _lk: string;
-  };
-
-  type Ad = Attributes & {
-    Ctr?: Attributes;
-    Territoire: Attributes;
-    AdCode: Attributes;
-    ArpLat: string;
-    AdRefAltFt: string;
-    ArpLong: string;
-    AdNomComplet: string;
-    AdNomCarto: string;
-    AdMagVar: string;
-  };
-
-  type Espace = Attributes & {
-    Territoire: Attributes;
-    TypeEspace: string;
-    Nom: string;
-    AdAssocie: Attributes;
-  };
-
-  type Rwy = Attributes & {
-    OrientationGeo: number;
-    Longueur: number;
-    Rwy: string;
-    Principale?: "oui" | "non";
-    Revetement: string;
-  };
-
-  type Obstacle = Attributes & {
-    Latitude: number;
-    Longitude: number;
-    TypeObst: string;
-    Combien: number;
-    AmslFt: number;
-    AglFt: number;
-    Geometrie: string;
-  };
-
-  type Frequence = Attributes & {
-    Ad: Attributes;
-    Frequence: number;
-    Remarque: string;
-  };
-
-  type Service = Attributes & {
-    Service: string;
-    IndicService: string;
-    Espace?: Attributes;
-  };
-
-  type Partie = Attributes & {
-    Espace: Attributes;
-    NomPartie: string;
-    NumeroPartie: number;
-    Geometrie: string;
-  };
-
-  type SiaExport = {
-    _effDate: string;
-    AdS: {
-      Ad: Array<Ad>;
-    };
-    FrequenceS: {
-      Frequence: Array<Frequence>;
-    };
-    ServiceS: {
-      Service: Array<Service>;
-    };
-    EspaceS: {
-      Espace: Array<Espace>;
-    };
-    RwyS: {
-      Rwy: Array<Rwy>;
-    };
-    ObstacleS: {
-      Obstacle: Array<Obstacle>;
-    };
-    PartieS: {
-      Partie: Array<Partie>;
-    };
-  };
-
   const {
-    AdS: { Ad },
-    FrequenceS: { Frequence },
-    ServiceS: { Service },
-    EspaceS: { Espace },
-    RwyS: { Rwy },
-    ObstacleS: { Obstacle },
-    PartieS: { Partie },
+    AdS: { Ad: ads },
+    FrequenceS: { Frequence: frequences },
+    ServiceS: { Service: services },
+    EspaceS: { Espace: espaces },
+    RwyS: { Rwy: rwys },
+    ObstacleS: { Obstacle: obstacles },
+    PartieS: { Partie: parties },
+    VolumeS: { Volume: volumes },
     _effDate,
   }: SiaExport = jsonObj.SiaExport.Situation;
 
-  const adById = keyBy(Ad, "_pk");
-  const servicesByAdId = groupBy(Service, "Ad._pk");
-  const serviceById = keyBy(Service, "_pk");
-  const serviceByEspaceId = _(Service)
+  const servicesByAdId = groupBy(services, "Ad._pk");
+  const serviceByEspaceId = _(services)
     .filter(({ Espace }) => Espace !== null)
     .groupBy("Espace._pk")
     .value();
-  const espaceById = keyBy(Espace, "_pk");
-  const frequencesByServiceId = groupBy(Frequence, "Service._pk");
-  const rwysByAdId = groupBy(Rwy, "Ad._pk");
-  const partiesByEspaceId = keyBy(Partie, "Espace._pk");
-  const ctrEspaces: Ctr[] = _(Espace)
-    .filter((e) => e.TypeEspace === "CTR")
-    .map((e) => ({
-      name: e.Nom,
-      geometry: partiesByEspaceId[e._pk].Geometrie.split("\n").map(
-        (latlngString) => {
-          // console.log(latlngString);
-          const latlng = latlngString.split(",");
-          return {
-            lat: iso<Latitude>().wrap(Number(latlng[0])),
-            lng: iso<Longitude>().wrap(Number(latlng[1])),
-          };
-        },
-      ),
-    }))
-    .value();
-  // console.log(JSON.stringify(rwysByAdId["66"]));
-  // //@ts-ignore
-  // return;
-  // console.log(JSON.stringify(ctrEspaces));
+  const frequencesByServiceId = groupBy(frequences, "Service._pk");
+  const rwysByAdId = groupBy(rwys, "Ad._pk");
 
   const ctrServicesByAdId = mapValues(
     keyBy(
-      flatMap(Ad, ({ _pk, Ctr }) => (Ctr ? [{ Ctr, adId: _pk }] : [])),
+      flatMap(ads, ({ _pk, Ctr }) => (Ctr ? [{ Ctr, adId: _pk }] : [])),
       "adId",
     ),
     ({ Ctr }) => serviceByEspaceId[Ctr._pk],
@@ -228,27 +98,17 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
       return ctrServices
         ? [...servicesByAdId[adId], ...ctrServices]
         : servicesByAdId[adId];
-      // return servicesByAdId[adId];
     },
-    (services) => {
-      return services
-        ? services.map((service) => {
-            if (service._pk == "720") {
-              // console.log(service);
-              // console.log(frequencesByServiceId[service._pk]);
-            }
-            return {
-              frequences: frequencesByServiceId[service._pk],
-              service,
-            };
-          })
-        : [];
-    },
+    (services) =>
+      services
+        ? services.map((service) => ({
+            frequences: frequencesByServiceId[service._pk],
+            service,
+          }))
+        : [],
   );
 
-  // console.log(frequencesByAdId(66));
-
-  const frequences = ({
+  const allFrequences = ({
     service,
     indicService,
     adId,
@@ -275,8 +135,6 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
       .flatten()
       .value();
 
-  // console.log(vfrPoints);
-
   const vfrPointsByIcaoCode = pipe(
     vfrPoints,
     Either.getOrElse<ValidationFailure, VfrPoint[]>(() => {
@@ -284,8 +142,6 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     }),
     fp.groupBy("icaoCode"),
   );
-
-  // console.log(vfrPointsByIcaoCode);
 
   const buildAerodrome = ({
     ArpLat,
@@ -299,6 +155,9 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     _pk: adId,
   }) => {
     const icaoCode = `${Territoire._lk.substr(1, 2)}${AdCode}`;
+    if (IGNORED_AERODROMES.includes(icaoCode)) {
+      return none;
+    }
     const mapRwy = ({
       Longueur,
       OrientationGeo,
@@ -310,7 +169,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
       magneticOrientation: number;
       lengthInMeters: number;
     } => ({
-      name: Rwy,
+      name: `${Rwy}`,
       surface: Revetement,
       magneticOrientation: Number(OrientationGeo),
       lengthInMeters: Number(Longueur),
@@ -326,15 +185,15 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
         aerodromeAltitude: AdRefAltFt,
         icaoCode,
         frequencies: {
-          afis: frequences({ adId, service: "AFIS" }),
-          atis: frequences({ adId, service: "ATIS" }),
-          autoinfo: frequences({ adId, service: "A/A" }),
-          ground: frequences({
+          afis: allFrequences({ adId, service: "AFIS" }),
+          atis: allFrequences({ adId, service: "ATIS" }),
+          autoinfo: allFrequences({ adId, service: "A/A" }),
+          ground: allFrequences({
             adId,
             service: "TWR",
             indicService: "Sol",
           }),
-          tower: frequences({
+          tower: allFrequences({
             adId,
             service: "TWR",
             indicService: "Tour",
@@ -359,15 +218,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     );
   };
 
-  const buildObstacle = ({
-    Latitude,
-    Longitude,
-    TypeObst,
-    Combien,
-    AmslFt,
-    AglFt,
-    Geometrie,
-  }: Obstacle) => {
+  const buildObstacle = ({ Latitude, Longitude, AmslFt, AglFt }: Obstacle) => {
     return pipe(
       obstacleCodec.decode({
         latLng: { lat: Latitude, lng: Longitude },
@@ -384,25 +235,21 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     );
   };
 
-  const aerodromes: Aerodrome[] = [];
-  // console.log(keys(jsonObj.SiaExport.Situation));
-  // console.log(jsonObj.SiaExport.Situation.AdS.Ad[100]);
-
   pipe(
     {
-      aerodromes: pipe(Ad, (ads) => ads.map(buildAerodrome), array.compact),
-      obstacles: pipe(Obstacle, (o) => o.map(buildObstacle), array.compact),
+      aerodromes: pipe(ads, (ads) => ads.map(buildAerodrome), array.compact),
+      obstacles: pipe(obstacles, (o) => o.map(buildObstacle), array.compact),
       vfrPoints: pipe(
         vfrPoints,
         Either.getOrElse(() => []),
       ),
+      ctr: extractCtrInfo({ espaces, parties, volumes }),
     },
     postProcess,
-    (x) => x,
     airacCycleCodec.encode,
     (airacData) =>
       fs.writeFileSync(
-        path.resolve(__dirname, `./jsonData/${_effDate}.json`),
+        path.resolve(__dirname, `../jsonData/${_effDate}.json`),
         JSON.stringify(airacData),
       ),
   );

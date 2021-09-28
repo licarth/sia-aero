@@ -3,7 +3,7 @@ import { airspaceClassCodec } from "./AirspaceClass";
 import { altitudeHeightFlightLevelSum } from "./AltitudeHeightFlightLevel";
 import { latLngCodec } from "./LatLng";
 
-export const ctrCodec = Codec.struct({
+export const tmaCodec = Codec.struct({
   name: Codec.string,
   geometry: Codec.array(latLngCodec),
   lowerLimit: altitudeHeightFlightLevelSum,
@@ -11,4 +11,4 @@ export const ctrCodec = Codec.struct({
   airspaceClass: airspaceClassCodec,
 });
 
-export type Ctr = Codec.TypeOf<typeof ctrCodec>;
+export type Tma = Codec.TypeOf<typeof tmaCodec>;

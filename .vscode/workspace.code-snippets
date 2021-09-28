@@ -1,0 +1,13 @@
+{
+  "fptsImport": {
+    "scope": "typescript,typescriptreact",
+    "prefix": "fpts, fp-ts",
+    "body": ["import * as ${0:Option} from 'fp-ts/lib/${0:Option}';"]
+  },
+  "iotsImport": {
+    "scope": "typescript",
+    "prefix": "iots, io-ts",
+    "description": "import io-ts lib",
+    "body": ["import * as ${0:Codec} from 'io-ts/lib/${0:Codec}';"]
+  },
+}

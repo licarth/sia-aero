@@ -13,4 +13,16 @@ describe("AiracData", () => {
       "MONTPELLIER M.",
     );
   });
+
+  it("loadCycle should get 4 Ctrs in Corsica", () => {
+    const cycle = AiracData.loadCycle(AiracCycles.NOV_04_2021);
+    const names = cycle
+      .getCtrsInBbox(8.5, 41.5, 9.5, 43)
+      .map(({ name }) => name);
+    expect(names).toHaveLength(4);
+    expect(names).toContainEqual("AJACCIO");
+    expect(names).toContainEqual("BASTIA");
+    expect(names).toContainEqual("FIGARI");
+    expect(names).toContainEqual("CALVI");
+  });
 });

@@ -1,8 +1,8 @@
 import * as Either from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
-import * as Codec from "io-ts/lib/Codec";
 import { iso } from "newtype-ts";
-import { VhfRadioFrequency, vhfRadioFrequencyCodec } from "./VhfRadioFrequency";
+import { VhfRadioFrequency } from ".";
+import { vhfRadioFrequencyCodec } from "./VhfRadioFrequency";
 describe("VhfRadioFrequency", () => {
   it("should return error if not a number", () => {
     expect(
@@ -36,4 +36,3 @@ describe("VhfRadioFrequency", () => {
     );
   });
 });
-
