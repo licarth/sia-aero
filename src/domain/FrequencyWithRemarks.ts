@@ -9,11 +9,11 @@ export type VhfFrequencyWithRemarks = {
   remarks: Option<string>;
 };
 
+export const remarksCodec = optionFromNullable(t.string) as Codec.Codec<
+  any, unknown, Option<string>
+>;
+
 export const vhfFrequencyWithRemarksCodec = Codec.struct({
   frequency: vhfRadioFrequencyCodec,
-  remarks: optionFromNullable(t.string) as Codec.Codec<
-    any,
-    unknown,
-    Option<string>
-  >,
+  remarks: remarksCodec,
 });

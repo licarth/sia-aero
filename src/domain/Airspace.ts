@@ -1,17 +1,32 @@
+import * as Codec from "io-ts/Codec";
 import { iso } from "newtype-ts";
 import { Latitude, Longitude } from ".";
-import { Ctr } from "./Ctr";
+import { airspaceClassCodec } from "./AirspaceClass";
+import { airspaceTypeCodec } from "./AirspaceType";
+import { altitudeHeightFlightLevelSum } from "./AltitudeHeightFlightLevel";
+import { DangerZone } from "./DangerZone";
+import { latLngCodec } from "./LatLng";
 
+export const airspaceCodec = Codec.struct({
+  name: Codec.string,
+  geometry: Codec.array(latLngCodec),
+  lowerLimit: altitudeHeightFlightLevelSum,
+  higherLimit: altitudeHeightFlightLevelSum,
+  airspaceClass: airspaceClassCodec,
+  type: airspaceTypeCodec,
+});
+
+export type Airspace = Codec.TypeOf<typeof airspaceCodec>;
 
 export namespace Airspace {
   export const boundingBox = (
-    ctr: Ctr
+    ctr: Airspace | DangerZone,
   ): [
-      [Latitude, Longitude],
-      [Latitude, Longitude],
-      [Latitude, Longitude],
-      [Latitude, Longitude]
-    ] => {
+    [Latitude, Longitude],
+    [Latitude, Longitude],
+    [Latitude, Longitude],
+    [Latitude, Longitude],
+  ] => {
     const lats: number[] = [];
     const lngs: number[] = [];
 
@@ -31,13 +46,13 @@ export namespace Airspace {
       [Latitude, Longitude],
       [Latitude, Longitude],
       [Latitude, Longitude],
-      [Latitude, Longitude]
+      [Latitude, Longitude],
     ] = [
-        [minlat, minlng],
-        [maxlat, minlng],
-        [maxlat, maxlng],
-        [minlat, maxlng],
-      ];
+      [minlat, minlng],
+      [maxlat, minlng],
+      [maxlat, maxlng],
+      [minlat, maxlng],
+    ];
 
     // console.log(`geom : ${JSON.stringify(ctr.geometry)}`);
     // console.log(`bbox: ${JSON.stringify(bbox)}`);

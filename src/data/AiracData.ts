@@ -5,7 +5,7 @@ import { iso } from "newtype-ts";
 import { Aerodrome, IcaoCode, Latitude, Longitude } from "../domain";
 import { airacCycleCodec, AiracCycleData } from "../domain/AiracCycleData";
 import { Airspace } from "../domain/Airspace";
-import { Ctr } from "../domain/Ctr";
+import { DangerZone } from "../domain/DangerZone";
 import { Obstacle } from "../domain/Obstacle";
 import { VfrPoint } from "../domain/VfrPoint";
 import { getOrThrowDecodeError } from "../either";
@@ -16,7 +16,11 @@ export class AiracData {
   private _airportsTree: KDBush<Aerodrome>;
   private _obstaclesTree: KDBush<Obstacle>;
   private _vfrPointsTree: KDBush<VfrPoint>;
-  private _areasCornersTree: KDBush<{
+  private _ctrCornersTree: KDBush<{
+    latLng: [Latitude, Longitude];
+    i: number;
+  }>;
+  private _dangerZonesCornersTree: KDBush<{
     latLng: [Latitude, Longitude];
     i: number;
   }>;
@@ -40,9 +44,27 @@ export class AiracData {
       (o) => iso<Longitude>().unwrap(o.latLng.lng),
       (o) => iso<Latitude>().unwrap(o.latLng.lat),
     );
-    this._areasCornersTree = new KDBush(
+    this._ctrCornersTree = new KDBush(
       _.flatMap(
-        this.ctrs.map((ctr, i) => ({ i, bbox: Airspace.boundingBox(ctr) })),
+        this.airspaces.map((ctr, i) => ({
+          i,
+          bbox: Airspace.boundingBox(ctr),
+        })),
+        ({ i, bbox }) =>
+          bbox.map((latLng) => ({
+            latLng,
+            i,
+          })),
+      ),
+      (o) => iso<Longitude>().unwrap(o.latLng[1]),
+      (o) => iso<Latitude>().unwrap(o.latLng[0]),
+    );
+    this._dangerZonesCornersTree = new KDBush(
+      _.flatMap(
+        this.dangerZones.map((pZone, i) => ({
+          i,
+          bbox: Airspace.boundingBox(pZone),
+        })),
         ({ i, bbox }) =>
           bbox.map((latLng) => ({
             latLng,
@@ -67,8 +89,12 @@ export class AiracData {
     return this._airacCycleData.vfrPoints;
   }
 
-  get ctrs(): Ctr[] {
-    return this._airacCycleData.ctr;
+  get airspaces(): Airspace[] {
+    return this._airacCycleData.airspaces;
+  }
+
+  get dangerZones(): DangerZone[] {
+    return this._airacCycleData.dangerZones;
   }
 
   static loadCycle(airacCycle?: AiracCycle): AiracData {
@@ -97,20 +123,30 @@ export class AiracData {
       .map((i) => this._airacCycleData.vfrPoints[i]);
   }
 
-  getCtrsInBbox(minX: number, minY: number, maxX: number, maxY: number): Ctr[] {
+  getAirspacesInBbox(
+    minX: number,
+    minY: number,
+    maxX: number,
+    maxY: number,
+  ): Airspace[] {
     return _.uniq(
-      this._areasCornersTree
+      this._ctrCornersTree
         .range(minX, minY, maxX, maxY)
         .map((i) => Math.floor(i / 4)),
-    ).map((i) => this._airacCycleData.ctr[i]);
+    ).map((i) => this._airacCycleData.airspaces[i]);
   }
 
-  getTmasInBbox(minX: number, minY: number, maxX: number, maxY: number): Tma[] {
+  getDangerZonesInBbox(
+    minX: number,
+    minY: number,
+    maxX: number,
+    maxY: number,
+  ): DangerZone[] {
     return _.uniq(
-      this._areasCornersTree
+      this._dangerZonesCornersTree
         .range(minX, minY, maxX, maxY)
         .map((i) => Math.floor(i / 4)),
-    ).map((i) => this._airacCycleData.ctr[i]);
+    ).map((i) => this._airacCycleData.dangerZones[i]);
   }
 
   getAerodromeByIcaoCode(icaoCode: IcaoCode | string) {

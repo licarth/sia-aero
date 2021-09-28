@@ -17,7 +17,10 @@ import { airacCycleCodec, AiracCycleData } from "../domain/AiracCycleData";
 import { obstacleCodec } from "../domain/Obstacle";
 import { VfrPoint } from "../domain/VfrPoint";
 import { IGNORED_AERODROMES } from "../ignoredAerodromes";
-import { extractCtrInfo } from "./extractCtrInfo";
+import {
+  extractAirspaces as extractAirspaces,
+  extractDangerZones
+} from "./extractZones";
 import { importVfrPoints } from "./importVfrPoints";
 import { Obstacle, Rwy, SiaExport } from "./SiaExportTypes";
 
@@ -234,6 +237,8 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
       ),
     );
   };
+  const partiesByEspaceId = groupBy(parties, "Espace._pk");
+  const volumesByPartieId = groupBy(volumes, "Partie._pk");
 
   pipe(
     {
@@ -243,7 +248,17 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
         vfrPoints,
         Either.getOrElse(() => []),
       ),
-      ctr: extractCtrInfo({ espaces, parties, volumes }),
+      airspaces: extractAirspaces({
+        espaces,
+        parties,
+        volumes,
+        frequencesByServiceId,
+      }),
+      dangerZones: extractDangerZones({
+        espaces,
+        partiesByEspaceId,
+        volumesByPartieId,
+      }),
     },
     postProcess,
     airacCycleCodec.encode,
