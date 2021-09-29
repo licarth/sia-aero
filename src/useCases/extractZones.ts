@@ -2,13 +2,17 @@ import * as Either from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
 import _, { Dictionary, groupBy, keyBy } from "lodash";
 import { iso } from "newtype-ts";
-import { Latitude, Longitude, remarksCodec } from "..";
-import { Airspace } from "../domain/Airspace";
-import { airspaceClassCodec } from "../domain/AirspaceClass";
-import { airspaceTypeCodec } from "../domain/AirspaceType";
-import { altitudeHeightFlightLevelSum } from "../domain/AltitudeHeightFlightLevel";
-import { DangerZone } from "../domain/DangerZone";
-import { dangerZoneTypeCodec } from "../domain/DangerZoneType";
+import {
+  Airspace,
+  airspaceClassCodec,
+  airspaceTypeCodec,
+  altitudeHeightFlightLevelSum,
+  DangerZone,
+  dangerZoneTypeCodec,
+  Latitude,
+  Longitude,
+  remarksCodec,
+} from "../domain";
 import { Espace, Frequence, Partie, Volume } from "./SiaExportTypes";
 
 export const extractAirspaces = ({

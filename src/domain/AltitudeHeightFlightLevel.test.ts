@@ -91,4 +91,9 @@ describe("altitudeHeightFlightLevelSum", () => {
       right(new FlightLevel({ levelInFeet: 9000 })),
     );
   });
+  it("should decode SFC", () => {
+    expect(altitudeHeightFlightLevelSum.decode("SFC")).toEqual(
+      right(new Height(0)),
+    );
+  });
 });

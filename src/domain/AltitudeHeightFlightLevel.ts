@@ -22,7 +22,7 @@ export class Height {
   }
 
   toString() {
-    return `${this.feetValue} ft. ASFC`;
+    return this.feetValue === 0 ? `SFC` : `${this.feetValue} ft. ASFC`;
   }
 }
 
@@ -43,7 +43,9 @@ export const heightCodec = Codec.make(
     Decoder.string,
     Decoder.compose({
       decode: (altString: string) => {
-        const m = altString.match(/^(([0-9]| )*)( )?(ft)?(.)?( )?(SFC|ASFC|AGL)$/);
+        const m = altString.match(
+          /^(([0-9]| )*)( )?(ft)?(.)?( )?(SFC|ASFC|AGL)$/,
+        );
         return m
           ? Decoder.success(new Height(Number(m[1].replace(/ /g, ""))))
           : Decoder.failure(altString, "a valid Height");

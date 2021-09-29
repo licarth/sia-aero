@@ -1,4 +1,4 @@
-import { AirspaceType } from "../domain/AirspaceType";
+import { AirspaceType } from "../domain";
 import { AiracCycles } from "./AiracCycle";
 import { AiracData } from "./AiracData";
 
