@@ -3,9 +3,8 @@
 > 🚧🚧🚧 WIP
 
 > Cette librairie est en cours de développement. N'hésitez pas à me contacter si vous êtes intéressés par son utilisation ou pour aider au développement.
->
 
-Cette librairie contient les données aéronautiques françaises (extraites principalement du SIA - Service d'Information Aéronautique). 
+Cette librairie contient les données aéronautiques françaises (extraites principalement du SIA - Service d'Information Aéronautique).
 
 L'idée est de rendre ces données utilisables facilement en javascript / typescript. (🚧 Rajouter un exemple d'utilisation ici)
 
@@ -18,10 +17,9 @@ Notamment, de façon non exhaustive:
   - altitude terrain, etc
 - espaces aériens
 - des données de coupe verticale
-   - relief le long d'une route
-   - espaces aériens traversés
-   - obstacles éventuels
-
+  - relief le long d'une route
+  - espaces aériens traversés
+  - obstacles éventuels
 
 ## Utilisation
 
@@ -34,9 +32,9 @@ console.log(
   aerodromesInCorsica
     .map(
       ({ icaoCode, aerodromeAltitude, mapShortName, runways }) =>
-        `${mapShortName} (${icaoCode}): alt. ${aerodromeAltitude} ft, main runway: ${runways.mainRunway.name}`,
+        `${mapShortName} (${icaoCode}): alt. ${aerodromeAltitude} ft, main runway: ${runways.mainRunway.name}`
     )
-    .join("\n"),
+    .join("\n")
 );
 
 /* 

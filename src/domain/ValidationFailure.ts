@@ -8,7 +8,7 @@ export class ValidationFailure {
   }
 
   toError() {
-    return new Error(`Value is ${this.reason} : ${this.value}`);
+    return new Error(`Value should be ${this.reason} : ${this.value}`);
   }
 
   static create(value: any, reason: string) {

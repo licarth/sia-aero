@@ -19,24 +19,25 @@ import { VfrPoint } from "../domain/VfrPoint";
 import { IGNORED_AERODROMES } from "../ignoredAerodromes";
 import {
   extractAirspaces as extractAirspaces,
-  extractDangerZones
+  extractDangerZones,
 } from "./extractZones";
 import { importVfrPoints } from "./importVfrPoints";
 import { Obstacle, Rwy, SiaExport } from "./SiaExportTypes";
 
 // const filePath = path.resolve("./raw-data", "XML_SIA_2021-03-25.xml");
-const filePath = path.resolve("./raw-data", "XML_SIA_FR-OM_2021-11-04.xml");
+// const filePath = path.resolve("./raw-data", "XML_SIA_FR-OM_2021-11-04.xml");
+const filePath = path.resolve("./raw-data", "XML_SIA_2022-08-11.xml");
 const windows1252EncodedFileReadStream = fs.readFileSync(filePath);
 
 const utf8FileReadStream = Iconv("windows-1252", "utf8").convert(
-  windows1252EncodedFileReadStream,
+  windows1252EncodedFileReadStream
 );
 
 export * from "../domain";
 
 const vfrPointsFilePath = path.resolve("./raw-data", "vfr-france.xml");
 const vfrPoints = importVfrPoints(
-  fs.readFileSync(vfrPointsFilePath).toString(),
+  fs.readFileSync(vfrPointsFilePath).toString()
 );
 
 const postProcess = (entries: AiracCycleData) => ({
@@ -90,9 +91,9 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
   const ctrServicesByAdId = mapValues(
     keyBy(
       flatMap(ads, ({ _pk, Ctr }) => (Ctr ? [{ Ctr, adId: _pk }] : [])),
-      "adId",
+      "adId"
     ),
-    ({ Ctr }) => serviceByEspaceId[Ctr._pk],
+    ({ Ctr }) => serviceByEspaceId[Ctr._pk]
   );
 
   const frequencesByAdId = flow(
@@ -108,7 +109,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
             frequences: frequencesByServiceId[service._pk],
             service,
           }))
-        : [],
+        : []
   );
 
   const allFrequences = ({
@@ -125,14 +126,14 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
         .filter(
           ({ service: { Service, IndicService } }) =>
             Service === service &&
-            (!indicService || IndicService === indicService),
+            (!indicService || IndicService === indicService)
         )
         .map(({ service, frequences }) =>
           frequences.map((f) => ({
             frequency: `${f.Frequence}`,
             remarks: f.Remarque,
-          })),
-        ),
+          }))
+        )
     )
       .uniqBy("frequency") //Removes duplicates for TWR
       .flatten()
@@ -140,10 +141,10 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
 
   const vfrPointsByIcaoCode = pipe(
     vfrPoints,
-    Either.getOrElse<ValidationFailure, VfrPoint[]>(() => {
-      throw new Error("Cannot read VFR points !");
+    Either.getOrElse<ValidationFailure, VfrPoint[]>((failure) => {
+      throw failure.toError();
     }),
-    fp.groupBy("icaoCode"),
+    fp.groupBy("icaoCode")
   );
 
   const buildAerodrome = ({
@@ -216,8 +217,8 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
           console.log(`Ignoring aerodrome ${icaoCode}\n${draw(e)}`);
           return none;
         },
-        (a) => some(a),
-      ),
+        (a) => some(a)
+      )
     );
   };
 
@@ -233,8 +234,8 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
           console.log(`Ignoring obstacle ${`ADDOBSTACLEID`}\n${draw(e)}`);
           return none;
         },
-        (a) => some(a),
-      ),
+        (a) => some(a)
+      )
     );
   };
   const partiesByEspaceId = groupBy(parties, "Espace._pk");
@@ -246,7 +247,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
       obstacles: pipe(obstacles, (o) => o.map(buildObstacle), array.compact),
       vfrPoints: pipe(
         vfrPoints,
-        Either.getOrElse(() => []),
+        Either.getOrElse(() => [])
       ),
       airspaces: extractAirspaces({
         espaces,
@@ -265,7 +266,7 @@ if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
     (airacData) =>
       fs.writeFileSync(
         path.resolve(__dirname, `../jsonData/${_effDate}.json`),
-        JSON.stringify(airacData),
-      ),
+        JSON.stringify(airacData)
+      )
   );
 }

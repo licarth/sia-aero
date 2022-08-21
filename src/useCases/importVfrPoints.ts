@@ -9,6 +9,8 @@ import path from "path";
 import { IcaoCode, LatLng, ValidationFailure } from "../domain";
 import { VfrPoint } from "../domain/VfrPoint";
 import { sequenceS } from "fp-ts/Apply";
+import { flatten } from "lodash/fp";
+import { isString } from "lodash";
 
 const filePath = path.resolve("./raw-data", "XML_SIA_2021-03-25.xml");
 
@@ -50,9 +52,7 @@ var options = {
   stopNodes: ["parse-me-as-string"],
 };
 
-export const importVfrPoints = (
-  gpxString: string,
-): E.Either<ValidationFailure, VfrPoint[]> => {
+export const importVfrPoints = (gpxString: string) => {
   const jsonObj: GpxFile = parser.parse(gpxString, options);
 
   return pipe(
@@ -66,8 +66,15 @@ export const importVfrPoints = (
           latLng: LatLng.parse({ lat: Number(_lat), lng: Number(_lon) }),
         },
         sequenceS(E.Applicative),
-      ),
+        E.orElseW(() => E.right("invalid VFR point"))
+      )
     ),
     FPArray.array.sequence(E.either),
+    E.map((array) =>
+      array.reduce<VfrPoint[]>(
+        (prev, curr) => (isString(curr) ? prev : [...prev, curr]),
+        []
+      )
+    )
   );
 };
