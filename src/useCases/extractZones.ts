@@ -8,10 +8,8 @@ import {
   airspaceTypeCodec,
   altitudeHeightFlightLevelSum,
   DangerZone,
-  dangerZoneTypeCodec,
   Latitude,
   Longitude,
-  remarksCodec,
 } from "../domain";
 import { Espace, Frequence, Partie, Volume } from "./SiaExportTypes";
 
@@ -45,19 +43,19 @@ export const extractAirspaces = ({
             {} as any,
             Either.bind("lowerLimit", () =>
               altitudeHeightFlightLevelSum.decode(
-                `${Plancher} ${PlancherRefUnite}`,
-              ),
+                `${Plancher} ${PlancherRefUnite}`
+              )
             ),
             Either.bind("higherLimit", () =>
               altitudeHeightFlightLevelSum.decode(
-                `${Plafond} ${PlafondRefUnite}`,
-              ),
+                `${Plafond} ${PlafondRefUnite}`
+              )
             ),
             Either.bind("airspaceClass", () =>
-              airspaceClassCodec.decode(`${Classe}`),
+              airspaceClassCodec.decode(`${Classe}`)
             ),
             Either.bind("type", () =>
-              airspaceTypeCodec.decode(`${TypeEspace}`),
+              airspaceTypeCodec.decode(`${TypeEspace}`)
             ),
             Either.map(
               ({ lowerLimit, higherLimit, airspaceClass, type }): Airspace => ({
@@ -77,14 +75,14 @@ export const extractAirspaces = ({
                 higherLimit,
                 airspaceClass,
                 type,
-              }),
+              })
             ),
             Either.fold(
               () => [],
-              (a) => [a],
-            ),
+              (a) => [a]
+            )
           );
-        },
+        }
       );
     })
     .value();
@@ -112,44 +110,28 @@ export const extractDangerZones = ({
             Remarque,
           }) =>
             pipe(
-              {} as any,
-              Either.bind("lowerLimit", () =>
-                altitudeHeightFlightLevelSum.decode(
-                  `${Plancher} ${PlancherRefUnite}`,
-                ),
-              ),
-              Either.bind("higherLimit", () =>
-                altitudeHeightFlightLevelSum.decode(
-                  `${Plafond} ${PlafondRefUnite}`,
-                ),
-              ),
-              Either.bind("type", () =>
-                dangerZoneTypeCodec.decode(`${TypeEspace}`),
-              ),
-              Either.bind("remarks", () => remarksCodec.decode(`${Remarque}`)),
-              Either.map(
-                ({ lowerLimit, higherLimit, remarks, type }): DangerZone => ({
-                  name: `${TypeEspace} ${Nom}`,
-                  geometry: Geometrie.split("\n").map((latlngString) => {
-                    const latlng = latlngString.split(",");
-                    return {
-                      lat: iso<Latitude>().wrap(Number(latlng[0])),
-                      lng: iso<Longitude>().wrap(Number(latlng[1])),
-                    };
-                  }),
-                  lowerLimit,
-                  higherLimit,
-                  type,
-                  remarks,
+              {
+                lowerLimit: `${Plancher} ${PlancherRefUnite}`,
+                higherLimit: `${Plafond} ${PlafondRefUnite}`,
+                type: TypeEspace,
+                remarks: Remarque,
+                name: `${TypeEspace} ${Nom}`,
+                geometry: Geometrie.split("\n").map((latlngString) => {
+                  const latlng = latlngString.split(",");
+                  return {
+                    lat: iso<Latitude>().wrap(Number(latlng[0])),
+                    lng: iso<Longitude>().wrap(Number(latlng[1])),
+                  };
                 }),
-              ),
+              } as any,
+              DangerZone.codec.decode,
               Either.fold(
                 () => [],
-                (a) => [a],
-              ),
-            ),
-        ),
-      ),
+                (a) => [a]
+              )
+            )
+        )
+      )
     )
     .value();
 };

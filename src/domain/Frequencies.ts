@@ -1,21 +1,14 @@
 import * as Codec from "io-ts/Codec";
-import {
-  VhfFrequencyWithRemarks,
-  vhfFrequencyWithRemarksCodec
-} from "./FrequencyWithRemarks";
+import { VhfFrequencyWithRemarks } from "./FrequencyWithRemarks";
 
-export interface Frequencies {
-  afis: ReadonlyArray<VhfFrequencyWithRemarks>;
-  atis: ReadonlyArray<VhfFrequencyWithRemarks>;
-  autoinfo: ReadonlyArray<VhfFrequencyWithRemarks>;
-  ground: ReadonlyArray<VhfFrequencyWithRemarks>;
-  tower: ReadonlyArray<VhfFrequencyWithRemarks>;
+export namespace Frequencies {
+  export const codec = Codec.struct({
+    afis: Codec.array(VhfFrequencyWithRemarks.codec),
+    atis: Codec.array(VhfFrequencyWithRemarks.codec),
+    autoinfo: Codec.array(VhfFrequencyWithRemarks.codec),
+    tower: Codec.array(VhfFrequencyWithRemarks.codec),
+    ground: Codec.array(VhfFrequencyWithRemarks.codec),
+  });
 }
 
-export const frequenciesCodec = Codec.struct({
-  afis: Codec.array(vhfFrequencyWithRemarksCodec),
-  atis: Codec.array(vhfFrequencyWithRemarksCodec),
-  autoinfo: Codec.array(vhfFrequencyWithRemarksCodec),
-  tower: Codec.array(vhfFrequencyWithRemarksCodec),
-  ground: Codec.array(vhfFrequencyWithRemarksCodec),
-});
+export type Frequencies = Codec.TypeOf<typeof Frequencies.codec>;

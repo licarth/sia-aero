@@ -1,6 +1,6 @@
 {
   "name": "ts-aerodata-france",
-  "version": "0.1.0",
+  "version": "0.1.5",
   "main": "build/index.js",
   "author": "Thomas Carli <thomas.carli@gmail.com>",
   "license": "MIT",
@@ -39,7 +39,6 @@
     "test": "jest",
     "build": "rm -rf build && mkdir build && tsc --outDir build",
     "build-incremental": "tsc --outDir build",
-    "prepublish": "yarn build",
     "publish": "npm publish",
     "generate-json": "yarn ts-node src/useCases/generateJson.ts"
   },

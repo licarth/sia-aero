@@ -25,7 +25,7 @@ Notamment, de façon non exhaustive:
 
 ```typescript
 import { AiracData } from "./AiracData";
-const data = AiracData.loadCycle(AiracCycles.NOV_04_2021);
+const data = AiracData.loadCycle(AiracCycles.SEP_08_2022);
 const aerodromesInCorsica = data.getAerodromesInBbox(8.5, 41.5, 9.5, 43);
 
 console.log(

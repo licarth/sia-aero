@@ -4,9 +4,9 @@ import * as Codec from "io-ts/lib/Codec";
 import * as Decoder from "io-ts/lib/Decoder";
 import { iso, Newtype } from "newtype-ts";
 import {
-  newTypeNumberDecoder,
   numberEncoder,
-  stringEncoder
+  parseNumberToDecoder,
+  stringEncoder,
 } from "./iotsUtils";
 import { ValidationFailure } from "./ValidationFailure";
 
@@ -26,16 +26,16 @@ export interface Runway {
 
 export namespace MagneticRunwayOrientation {
   export const parse: (
-    orientationInDegrees: number,
+    orientationInDegrees: number
   ) => Either.Either<ValidationFailure, MagneticRunwayOrientation> = (value) =>
     pipe(
       value,
       Either.fromPredicate(
         (orientationInDegrees) =>
           orientationInDegrees >= 0 && orientationInDegrees <= 180,
-        (value) => ValidationFailure.create(value, `in range [0, 180] °`),
+        (value) => ValidationFailure.create(value, `in range [0, 180] °`)
       ),
-      Either.map(iso<MagneticRunwayOrientation>().wrap),
+      Either.map(iso<MagneticRunwayOrientation>().wrap)
     );
   export const getValue = iso<MagneticRunwayOrientation>().unwrap;
 }
@@ -63,13 +63,13 @@ const surfaceDecoder: Decoder.Decoder<unknown, RunwaySurface> = pipe(
           return Decoder.failure(surface, "asphalt or grass");
       }
     },
-  }),
+  })
 );
 
 export const runwayCodec = Codec.struct({
   magneticOrientation: Codec.make(
-    newTypeNumberDecoder(MagneticRunwayOrientation.parse),
-    numberEncoder(),
+    parseNumberToDecoder(MagneticRunwayOrientation.parse),
+    numberEncoder()
   ),
   surface: Codec.make(surfaceDecoder, stringEncoder()),
   name: Codec.string,

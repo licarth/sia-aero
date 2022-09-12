@@ -9,6 +9,7 @@ import { Airspace } from "../domain/Airspace";
 import { DangerZone } from "../domain/DangerZone";
 import { Obstacle } from "../domain/Obstacle";
 import { VfrPoint } from "../domain/VfrPoint";
+import { Vor } from "../domain/Vor";
 import { getOrThrowDecodeError } from "../either";
 import { AiracCycle } from "./AiracCycle";
 
@@ -24,6 +25,7 @@ export class AiracData {
   private _airportsTree: KDBush<Aerodrome>;
   private _obstaclesTree: KDBush<Obstacle>;
   private _vfrPointsTree: KDBush<VfrPoint>;
+  private _vorsTree: KDBush<Vor>;
   private _airspacesTree: RBush<Attributes & { airspace: Airspace }>;
   private _dangerZonesTree: RBush<Attributes & { dangerZone: DangerZone }>;
   private _aerodromesPerIcaoCode: Dictionary<Aerodrome>;
@@ -34,17 +36,22 @@ export class AiracData {
     this._airportsTree = new KDBush(
       this.aerodromes,
       (a) => iso<Longitude>().unwrap(a.latLng.lng),
-      (a) => iso<Latitude>().unwrap(a.latLng.lat),
+      (a) => iso<Latitude>().unwrap(a.latLng.lat)
     );
     this._obstaclesTree = new KDBush(
       this.obstacles,
       (o) => iso<Longitude>().unwrap(o.latLng.lng),
-      (o) => iso<Latitude>().unwrap(o.latLng.lat),
+      (o) => iso<Latitude>().unwrap(o.latLng.lat)
     );
     this._vfrPointsTree = new KDBush(
       this.vfrPoints,
       (o) => iso<Longitude>().unwrap(o.latLng.lng),
-      (o) => iso<Latitude>().unwrap(o.latLng.lat),
+      (o) => iso<Latitude>().unwrap(o.latLng.lat)
+    );
+    this._vorsTree = new KDBush(
+      this.vors,
+      (o) => iso<Longitude>().unwrap(o.latLng.lng),
+      (o) => iso<Latitude>().unwrap(o.latLng.lat)
     );
     this._airspacesTree = new RBush();
     this._airspacesTree.load(
@@ -58,8 +65,8 @@ export class AiracData {
             maxX: bbox[2][1],
             maxY: bbox[2][0],
           };
-        }),
-      ),
+        })
+      )
     );
     this._dangerZonesTree = new RBush();
     this._dangerZonesTree.load(
@@ -73,8 +80,8 @@ export class AiracData {
             maxX: bbox[2][1],
             maxY: bbox[2][0],
           };
-        }),
-      ),
+        })
+      )
     );
     this._aerodromesPerIcaoCode = _.keyBy(this.aerodromes, "icaoCode");
   }
@@ -91,6 +98,10 @@ export class AiracData {
     return this._airacCycleData.vfrPoints;
   }
 
+  get vors(): Vor[] {
+    return this._airacCycleData.vors;
+  }
+
   get airspaces(): Airspace[] {
     return this._airacCycleData.airspaces;
   }
@@ -103,7 +114,7 @@ export class AiracData {
     return pipe(
       airacCycleCodec.decode(airacCycle),
       getOrThrowDecodeError,
-      (airacCycleData) => new AiracData({ airacCycleData }),
+      (airacCycleData) => new AiracData({ airacCycleData })
     );
   }
 
@@ -111,6 +122,12 @@ export class AiracData {
     return this._airportsTree
       .range(minX, minY, maxX, maxY)
       .map((i) => this._airacCycleData.aerodromes[i]);
+  }
+
+  getVorsInBbox(minX: number, minY: number, maxX: number, maxY: number) {
+    return this._vorsTree
+      .range(minX, minY, maxX, maxY)
+      .map((i) => this._airacCycleData.vors[i]);
   }
 
   getObstaclesInBbox(minX: number, minY: number, maxX: number, maxY: number) {
@@ -129,7 +146,7 @@ export class AiracData {
     minX: number,
     minY: number,
     maxX: number,
-    maxY: number,
+    maxY: number
   ): Airspace[] {
     return this._airspacesTree
       .search({ minX, minY, maxX, maxY })
@@ -140,7 +157,7 @@ export class AiracData {
     minX: number,
     minY: number,
     maxX: number,
-    maxY: number,
+    maxY: number
   ): DangerZone[] {
     return this._dangerZonesTree
       .search({ minX, minY, maxX, maxY })

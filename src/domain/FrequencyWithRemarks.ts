@@ -1,19 +1,17 @@
-import { Option } from "fp-ts/lib/Option";
-import * as t from "io-ts";
-import { optionFromNullable } from "io-ts-types";
 import * as Codec from "io-ts/lib/Codec";
-import { VhfRadioFrequency } from ".";
-import { vhfRadioFrequencyCodec } from "./VhfRadioFrequency";
-export type VhfFrequencyWithRemarks = {
-  frequency: VhfRadioFrequency;
-  remarks: Option<string>;
-};
+import { optional } from "./io-ts/optional";
+import { VhfRadioFrequency } from "./VhfRadioFrequency";
 
-export const remarksCodec = optionFromNullable(t.string) as Codec.Codec<
-  any, unknown, Option<string>
+export const remarksCodec = optional(Codec.string);
+
+export namespace VhfFrequencyWithRemarks {
+  export const codec = Codec.struct({
+    frequency: VhfRadioFrequency.codec,
+    remarks: remarksCodec,
+  });
+  const b = Codec.fromStruct({});
+}
+
+export type VhfFrequencyWithRemarks = Codec.TypeOf<
+  typeof VhfFrequencyWithRemarks.codec
 >;
-
-export const vhfFrequencyWithRemarksCodec = Codec.struct({
-  frequency: vhfRadioFrequencyCodec,
-  remarks: remarksCodec,
-});

@@ -13,11 +13,11 @@ export const stringEncoder: StringEncoder = <T>() => ({
 });
 
 export const numberEncoder: NumberEncoder = <T>() => ({
-  encode: flow((x) => (x as unknown) as number, number.encode),
+  encode: flow((x) => x as unknown as number, number.encode),
 });
 
-export const newTypeNumberDecoder: <T>(
-  parse: (value: number) => Either.Either<ValidationFailure, T>,
+export const parseNumberToDecoder: <T>(
+  parse: (value: number) => Either.Either<ValidationFailure, T>
 ) => Decoder.Decoder<unknown, T> = (parse) =>
   pipe(
     castableToNumberDecoder,
@@ -25,16 +25,13 @@ export const newTypeNumberDecoder: <T>(
       pipe(
         n,
         parse,
-        Either.fold(
-          ({ reason }) => Decoder.failure(n, reason),
-          Decoder.success,
-        ),
-      ),
-    ),
+        Either.fold(({ reason }) => Decoder.failure(n, reason), Decoder.success)
+      )
+    )
   );
 
-export const newTypeStringDecoder: <T>(
-  parse: (value: string) => Either.Either<ValidationFailure, T>,
+export const parseStringToDecoder: <T>(
+  parse: (value: string) => Either.Either<ValidationFailure, T>
 ) => Decoder.Decoder<unknown, T> = (parse) =>
   pipe(
     Decoder.string,
@@ -42,12 +39,9 @@ export const newTypeStringDecoder: <T>(
       pipe(
         n,
         parse,
-        Either.fold(
-          ({ reason }) => Decoder.failure(n, reason),
-          Decoder.success,
-        ),
-      ),
-    ),
+        Either.fold(({ reason }) => Decoder.failure(n, reason), Decoder.success)
+      )
+    )
   );
 
 const castableToNumberDecoder = {

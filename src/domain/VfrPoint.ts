@@ -1,17 +1,12 @@
 import * as Codec from "io-ts/lib/Codec";
-import { IcaoCode, icaoCodeCodec } from "./IcaoCode";
-import { LatLng, latLngCodec } from "./LatLng";
+import { icaoCodeCodec } from "./IcaoCode";
+import { latLngCodec } from "./LatLng";
 
-export interface VfrPoint {
-  icaoCode: IcaoCode;
-  name: string;
-  description: string;
-  latLng: LatLng;
-}
+export type VfrPoint = Codec.TypeOf<typeof vfrPointCodec>;
 
-export const vfrPointCodec: Codec.Codec<unknown, any, VfrPoint> = Codec.struct({
+export const vfrPointCodec = Codec.struct({
   icaoCode: icaoCodeCodec,
   name: Codec.string,
-  description: Codec.string,
+  description: Codec.nullable(Codec.string),
   latLng: latLngCodec,
 });

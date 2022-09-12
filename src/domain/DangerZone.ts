@@ -6,17 +6,19 @@ import { altitudeHeightFlightLevelSum } from "./AltitudeHeightFlightLevel";
 import { dangerZoneTypeCodec } from "./DangerZoneType";
 import { latLngCodec } from "./LatLng";
 
-export const dangerZoneCodec = Codec.struct({
-  name: Codec.string,
-  geometry: Codec.array(latLngCodec),
-  lowerLimit: altitudeHeightFlightLevelSum,
-  higherLimit: altitudeHeightFlightLevelSum,
-  type: dangerZoneTypeCodec,
-  remarks: optionFromNullable(t.string) as Codec.Codec<
-    any,
-    unknown,
-    Option<string>
-  >,
-});
+export namespace DangerZone {
+  export const codec = Codec.struct({
+    name: Codec.string,
+    geometry: Codec.array(latLngCodec),
+    lowerLimit: altitudeHeightFlightLevelSum,
+    higherLimit: altitudeHeightFlightLevelSum,
+    type: dangerZoneTypeCodec,
+    remarks: optionFromNullable(t.string) as Codec.Codec<
+      any,
+      unknown,
+      Option<string>
+    >,
+  });
+}
 
-export type DangerZone = Codec.TypeOf<typeof dangerZoneCodec>;
+export type DangerZone = Codec.TypeOf<typeof DangerZone.codec>;

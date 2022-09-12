@@ -6,6 +6,7 @@ type Ad = Attributes & {
   Ctr?: Attributes;
   Territoire: Attributes;
   AdCode: Attributes;
+  AdStatut: string;
   ArpLat: string;
   AdRefAltFt: string;
   ArpLong: string;
@@ -70,6 +71,42 @@ export type Volume = Attributes & {
   HorTxt: string;
   Remarque: string;
 };
+export type NavFix = Attributes & {
+  Latitude: number;
+  Longitude: number;
+  Geometrie: string;
+  Territoire: Attributes;
+  Description?: string;
+  Ident?: string;
+  NavType:
+    | "VOR-DME"
+    | "NDB"
+    | "VOR"
+    | "TACAN"
+    | "DME-ATT"
+    | "WPT"
+    | "PNP"
+    | "L"
+    | "VFR";
+};
+export type RadioNav = Attributes & {
+  NavFix: Attributes;
+  Ad?: Attributes;
+  NomPhraseo?: string;
+  Station?: string;
+  FlPorteeVert?: string;
+  Frequence?: string;
+  Situation?: string;
+  AltitudeFt?: string;
+  HorCode?: string;
+  Usage?: string;
+  Portee?: string;
+  LatDme?: string;
+  LongDme?: string;
+  Remarque?: string;
+  Geometrie?: string;
+  Couverture?: string;
+};
 
 export type SiaExport = {
   _effDate: string;
@@ -96,5 +133,11 @@ export type SiaExport = {
   };
   VolumeS: {
     Volume: Array<Volume>;
+  };
+  NavFixS: {
+    NavFix: Array<NavFix>;
+  };
+  RadioNavS: {
+    RadioNav: Array<RadioNav>;
   };
 };
