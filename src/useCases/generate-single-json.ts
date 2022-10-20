@@ -16,7 +16,7 @@ import { addAutoInfoWhenNoOtherFrequency } from "../addAutoInfoWhenNoOtherFreque
 import { aerodromeCodec } from "../domain/Aerodrome";
 import { airacCycleCodec, AiracCycleData } from "../domain/AiracCycleData";
 import { obstacleCodec } from "../domain/Obstacle";
-import { VfrPoint, vfrPointCodec } from "../domain/VfrPoint";
+import { VfrPoint } from "../domain/VfrPoint";
 import { Vor } from "../domain/Vor";
 import { IGNORED_AERODROMES } from "../ignoredAerodromes";
 import { extractAirspaces, extractDangerZones } from "./extractZones";
@@ -147,7 +147,7 @@ export const generateJson = (filePath: string) => {
                 lng: Number(Longitude),
               },
             },
-            vfrPointCodec.decode,
+            VfrPoint.codec.decode,
             Either.orElseW((error) => {
               console.log("invalid VFR point: " + draw(error));
               return Either.right("");

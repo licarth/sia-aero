@@ -1,6 +1,6 @@
 {
   "name": "ts-aerodata-france",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "main": "build/index.js",
   "author": "Thomas Carli <thomas.carli@gmail.com>",
   "license": "MIT",

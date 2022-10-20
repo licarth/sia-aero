@@ -18,4 +18,9 @@ describe("VorRadioFrequency", () => {
       Either.right(VorRadioFrequency.factory({ kHzValue: 108000 }))
     );
   });
+  it("should succeed with frequency 108.000", () => {
+    expect(VorRadioFrequency.factory({ kHzValue: 108000 }).toString()).toBe(
+      "108.000"
+    );
+  });
 });

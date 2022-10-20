@@ -142,6 +142,20 @@ export class AiracData {
       .map((i) => this._airacCycleData.vfrPoints[i]);
   }
 
+  getFixturesWithinRange(x: number, y: number, rangeInMeters: number) {
+    return [
+      ...this._vfrPointsTree
+        .within(x, y, rangeInMeters)
+        .map((i) => this._airacCycleData.vfrPoints[i]),
+      ...this._airportsTree
+        .within(x, y, rangeInMeters)
+        .map((i) => this._airacCycleData.aerodromes[i]),
+      ...this._vorsTree
+        .within(x, y, rangeInMeters)
+        .map((i) => this._airacCycleData.vors[i]),
+    ];
+  }
+
   getAirspacesInBbox(
     minX: number,
     minY: number,

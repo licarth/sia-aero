@@ -4,7 +4,7 @@ import { Frequencies } from "./Frequencies";
 import { IcaoCode, icaoCodeCodec } from "./IcaoCode";
 import { LatLng, latLngCodec } from "./LatLng";
 import { Runways, runwaysCodec } from "./Runways";
-import { VfrPoint, vfrPointCodec } from "./VfrPoint";
+import { VfrPoint } from "./VfrPoint";
 
 const statusCodec = Codec.literal("MIL", "CAP", "RST", "OFF", "PRV");
 export interface Aerodrome {
@@ -30,6 +30,6 @@ export const aerodromeCodec: Codec.Codec<unknown, any, Aerodrome> =
     mapShortName: Codec.string,
     magneticVariation: Codec.number,
     runways: runwaysCodec,
-    vfrPoints: Codec.array(vfrPointCodec),
+    vfrPoints: Codec.array(VfrPoint.codec),
     status: statusCodec,
   });

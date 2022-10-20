@@ -1,7 +1,8 @@
 import * as Either from "fp-ts/lib/Either";
 import { flow, pipe } from "fp-ts/lib/function";
 import * as Codec from "io-ts/lib/Codec";
-import { success } from "io-ts/lib/Decoder";
+import * as D from "io-ts/lib/Decoder";
+import { error, success } from "io-ts/lib/Decoder";
 import { fromClassCodec } from "./io-ts/fromClassCodec";
 import { ValidationFailure } from "./ValidationFailure";
 
@@ -54,9 +55,22 @@ export class VorRadioFrequency {
 
   static xmlCodec = pipe(
     Codec.make(
-      { decode: (v) => success({ kHzValue: v }) },
+      pipe(
+        {
+          decode: (v) =>
+            pipe(
+              VorRadioFrequency.parse(v),
+              Either.foldW(
+                (e) => error(e.value, e.reason),
+                (v) => success(v)
+              )
+            ),
+        },
+        D.compose({ decode: (v) => success({ kHzValue: v }) })
+      ),
       { encode: (v) => v.kHzValue }
     ),
+    (x) => x,
     Codec.compose(VorRadioFrequency.propsCodec)
   );
 
