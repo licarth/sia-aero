@@ -5,6 +5,7 @@ import { airspaceClassCodec } from "./AirspaceClass";
 import { airspaceTypeCodec } from "./AirspaceType";
 import { altitudeHeightFlightLevelSum } from "./AltitudeHeightFlightLevel";
 import { DangerZone } from "./DangerZone";
+import { optional } from "./io-ts/optional";
 import { latLngCodec } from "./LatLng";
 
 export const airspaceCodec = Codec.struct({
@@ -12,7 +13,7 @@ export const airspaceCodec = Codec.struct({
   geometry: Codec.array(latLngCodec),
   lowerLimit: altitudeHeightFlightLevelSum,
   higherLimit: altitudeHeightFlightLevelSum,
-  airspaceClass: airspaceClassCodec,
+  airspaceClass: optional(airspaceClassCodec),
   type: airspaceTypeCodec,
 });
 
@@ -20,12 +21,12 @@ export type Airspace = Codec.TypeOf<typeof airspaceCodec>;
 
 export namespace Airspace {
   export const boundingBox = (
-    ctr: Airspace | DangerZone,
+    ctr: Airspace | DangerZone
   ): [
     [Latitude, Longitude],
     [Latitude, Longitude],
     [Latitude, Longitude],
-    [Latitude, Longitude],
+    [Latitude, Longitude]
   ] => {
     const lats: number[] = [];
     const lngs: number[] = [];
@@ -46,7 +47,7 @@ export namespace Airspace {
       [Latitude, Longitude],
       [Latitude, Longitude],
       [Latitude, Longitude],
-      [Latitude, Longitude],
+      [Latitude, Longitude]
     ] = [
       [minlat, minlng],
       [maxlat, minlng],

@@ -1,3 +1,4 @@
+import { of } from "fp-ts/lib/Option";
 import { iso } from "newtype-ts";
 import { Latitude, Longitude } from ".";
 import { Airspace } from "./Airspace";
@@ -20,7 +21,7 @@ describe("Ctr.boundingBox()", () => {
       name: "ctrName",
       lowerLimit: new Height(0),
       higherLimit: new Altitude(1000),
-      airspaceClass: AirspaceClass.D,
+      airspaceClass: of(AirspaceClass.D),
       type: AirspaceType.CTR,
     };
 

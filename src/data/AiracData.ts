@@ -11,7 +11,11 @@ import { Obstacle } from "../domain/Obstacle";
 import { VfrPoint } from "../domain/VfrPoint";
 import { Vor } from "../domain/Vor";
 import { getOrThrowDecodeError } from "../either";
-import { AiracCycle } from "./AiracCycle";
+import { Cycle } from "airac-cc";
+import { localTimeService, TimeService } from "../TimeService";
+import { format } from "date-fns";
+import pointInPolygon from "@turf/boolean-point-in-polygon";
+import { point, polygon } from "@turf/helpers";
 
 type Attributes = {
   minX: Longitude;
@@ -19,6 +23,8 @@ type Attributes = {
   maxX: Longitude;
   maxY: Latitude;
 };
+
+const FORMAT = "yyyy-MM-dd";
 
 export class AiracData {
   private _airacCycleData: AiracCycleData;
@@ -86,6 +92,10 @@ export class AiracData {
     this._aerodromesPerIcaoCode = _.keyBy(this.aerodromes, "icaoCode");
   }
 
+  get cycle(): Cycle {
+    return this._airacCycleData.cycle;
+  }
+
   get aerodromes(): Aerodrome[] {
     return this._airacCycleData.aerodromes;
   }
@@ -110,12 +120,21 @@ export class AiracData {
     return this._airacCycleData.dangerZones;
   }
 
-  static loadCycle(airacCycle?: AiracCycle): AiracData {
+  static async loadCycle(cycleData: object | string): Promise<AiracData> {
     return pipe(
-      airacCycleCodec.decode(airacCycle),
+      airacCycleCodec.decode(cycleData),
       getOrThrowDecodeError,
       (airacCycleData) => new AiracData({ airacCycleData })
     );
+  }
+
+  static currentCycleDate(timeService: TimeService = localTimeService) {
+    const newVariable = format(
+      Cycle.fromDate(timeService.now()).effectiveStart,
+      FORMAT
+    );
+    console.log(newVariable);
+    return newVariable;
   }
 
   getAerodromesInBbox(minX: number, minY: number, maxX: number, maxY: number) {
@@ -165,6 +184,37 @@ export class AiracData {
     return this._airspacesTree
       .search({ minX, minY, maxX, maxY })
       .map(({ airspace }) => airspace);
+  }
+
+  getAirspacesIntersecting(lat: number, lng: number): Airspace[] {
+    return this._airspacesTree
+      .search({ minX: lng, minY: lat, maxX: lng, maxY: lat })
+      .map(({ airspace }) => airspace)
+      .filter((airspace) => {
+        return pointInPolygon(
+          point([lng, lat]),
+          polygon([
+            airspace.geometry.map(({ lat, lng }) => [Number(lng), Number(lat)]),
+          ])
+        );
+      });
+  }
+
+  getDangerZonesIntersecting(lat: number, lng: number): DangerZone[] {
+    return this._dangerZonesTree
+      .search({ minX: lng, minY: lat, maxX: lng, maxY: lat })
+      .map(({ dangerZone }) => dangerZone)
+      .filter((dangerZone) => {
+        return pointInPolygon(
+          point([lng, lat]),
+          polygon([
+            dangerZone.geometry.map(({ lat, lng }) => [
+              Number(lng),
+              Number(lat),
+            ]),
+          ])
+        );
+      });
   }
 
   getDangerZonesInBbox(

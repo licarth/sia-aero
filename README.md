@@ -1,5 +1,18 @@
 # Données Aéronautiques pour Typescript / Javascript
 
+## Importer de nouvelles données aéronautiques
+
+Commander les fichiers [sur le site du SIA](https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/les-bases-de-donnees-sia.html) 
+
+Copier-coller les .zip dans `raw-data` et lancer:
+
+```
+yarn generate-json
+```
+
+Ensuite, publier la lib avec `yarn publish`.
+
+
 > 🚧🚧🚧 WIP
 
 > Cette librairie est en cours de développement. N'hésitez pas à me contacter si vous êtes intéressés par son utilisation ou pour aider au développement.

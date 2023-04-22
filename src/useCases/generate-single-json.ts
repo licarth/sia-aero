@@ -6,7 +6,6 @@ import { pipe } from "fp-ts/lib/function";
 import { none, some } from "fp-ts/lib/Option";
 import fs from "fs";
 import * as he from "he";
-import { Iconv } from "iconv";
 import { draw } from "io-ts/lib/Decoder";
 import _, { flatMap, flow, groupBy, isString, keyBy, mapValues } from "lodash";
 import * as fp from "lodash/fp";
@@ -21,20 +20,16 @@ import { Vor } from "../domain/Vor";
 import { IGNORED_AERODROMES } from "../ignoredAerodromes";
 import { extractAirspaces, extractDangerZones } from "./extractZones";
 import { Obstacle, Rwy, SiaExport } from "./SiaExportTypes";
+import { Cycle } from "airac-cc";
+import { parse } from "date-fns";
 
-export const generateJson = (filePath: string) => {
-  const windows1252EncodedFileReadStream = fs.readFileSync(filePath);
-
-  const utf8FileReadStream = Iconv("windows-1252", "utf8").convert(
-    windows1252EncodedFileReadStream
-  );
-
+export const generateJson = (utf8FileReadStream: Buffer) => {
   const postProcess = (entries: AiracCycleData) => ({
     ...entries,
     aerodromes: entries.aerodromes.map(addAutoInfoWhenNoOtherFrequency),
   });
 
-  var options = {
+  const options = {
     attributeNamePrefix: "_",
     // attrNodeName: false, //default is 'false'
     textNodeName: "#text",
@@ -53,9 +48,10 @@ export const generateJson = (filePath: string) => {
     tagValueProcessor: (val, tagName) => he.decode(val), //default is a=>a
     stopNodes: ["parse-me-as-string"],
   };
-  if (parser.validate(fs.readFileSync(filePath).toString()) === true) {
+  const stringXml = utf8FileReadStream.toString();
+  if (parser.validate(stringXml) === true) {
     //optional (it'll return an object in case it's not valid)
-    var jsonObj = parser.parse(utf8FileReadStream.toString(), options);
+    const jsonObj = parser.parse(stringXml, options);
 
     const {
       AdS: { Ad: ads },
@@ -326,20 +322,38 @@ export const generateJson = (filePath: string) => {
     const partiesByEspaceId = groupBy(parties, "Espace._pk");
     const volumesByPartieId = groupBy(volumes, "Partie._pk");
 
+    const airspaces = extractAirspaces({
+      espaces,
+      parties,
+      volumes,
+      frequencesByServiceId,
+    });
+
+    console.log(
+      airspaces.filter(({ type }) => type === "SIV").map(({ name }) => name)
+    );
+
+    console.log("# of aerodromes", ads.length);
+    console.log(
+      "ad codes",
+      JSON.stringify(
+        ads
+          .filter(({ AdCode }) => isNaN(Number(AdCode)))
+          .map(({ AdCode }) => `LF${AdCode}`)
+          .join(",")
+      )
+    );
+    console.log(_effDate);
     pipe(
       {
+        cycle: Cycle.fromDate(new Date(_effDate)),
         aerodromes: pipe(ads, (ads) => ads.map(buildAerodrome), array.compact),
         obstacles: pipe(obstacles, (o) => o.map(buildObstacle), array.compact),
         vfrPoints: pipe(
           vfrPoints,
           Either.getOrElse(() => [])
         ),
-        airspaces: extractAirspaces({
-          espaces,
-          parties,
-          volumes,
-          frequencesByServiceId,
-        }),
+        airspaces,
         dangerZones: extractDangerZones({
           espaces,
           partiesByEspaceId,

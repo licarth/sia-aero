@@ -1,5 +1,6 @@
 import * as Either from "fp-ts/lib/Either";
 import { pipe } from "fp-ts/lib/function";
+import { draw } from "io-ts/lib/Decoder";
 import _, { Dictionary, groupBy, keyBy } from "lodash";
 import { iso } from "newtype-ts";
 import {
@@ -11,6 +12,7 @@ import {
   Latitude,
   Longitude,
 } from "../domain";
+import { optional } from "../domain/io-ts/optional";
 import { Espace, Frequence, Partie, Volume } from "./SiaExportTypes";
 
 export const extractAirspaces = ({
@@ -27,7 +29,9 @@ export const extractAirspaces = ({
   const partiesByEspaceId = groupBy(parties, "Espace._pk");
   const volumesByPartieId = keyBy(volumes, "Partie._pk");
   return _(espaces)
-    .filter(({ TypeEspace }) => ["CTR", "TMA", "CTA"].includes(TypeEspace))
+    .filter(({ TypeEspace }) =>
+      ["CTR", "TMA", "CTA", "SIV"].includes(TypeEspace)
+    )
     .flatMap(({ _pk: espacePk, Nom, TypeEspace }): Airspace[] => {
       return _.flatMap(
         partiesByEspaceId[espacePk],
@@ -39,6 +43,9 @@ export const extractAirspaces = ({
             PlafondRefUnite,
             Classe,
           } = volumesByPartieId[partiePk];
+          if (TypeEspace === "SIV") {
+            console.log("SIV", Nom, NomPartie);
+          }
           return pipe(
             {} as any,
             Either.bind("lowerLimit", () =>
@@ -52,7 +59,9 @@ export const extractAirspaces = ({
               )
             ),
             Either.bind("airspaceClass", () =>
-              airspaceClassCodec.decode(`${Classe}`)
+              optional(airspaceClassCodec).decode(
+                Classe ? `${Classe}` : undefined
+              )
             ),
             Either.bind("type", () =>
               airspaceTypeCodec.decode(`${TypeEspace}`)
@@ -78,7 +87,10 @@ export const extractAirspaces = ({
               })
             ),
             Either.fold(
-              () => [],
+              (e) => {
+                console.error(draw(e));
+                return [];
+              },
               (a) => [a]
             )
           );

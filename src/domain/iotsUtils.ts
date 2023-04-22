@@ -1,5 +1,6 @@
 import * as Either from "fp-ts/lib/Either";
 import { flow, pipe } from "fp-ts/lib/function";
+import { unknown } from "io-ts";
 import { number } from "io-ts/lib/Codec";
 import * as Decoder from "io-ts/lib/Decoder";
 import * as Encoder from "io-ts/lib/Encoder";
@@ -45,7 +46,7 @@ export const parseStringToDecoder: <T>(
   );
 
 const castableToNumberDecoder = {
-  decode: (a) => {
+  decode: (a: any) => {
     try {
       return Decoder.success(Number(a));
     } catch {
